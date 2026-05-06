@@ -1,107 +1,218 @@
-<<<<<<< HEAD
-# MORAI RL Starter
+# MORAI RL
 
-MORAI UDP 기반 강화학습 1단계를 바로 시작할 수 있도록 만든 최소 골격입니다.
+MORAI Simulator UDP I/O를 사용해 강화학습 실험을 돌리기 위한 RL 환경입니다.  
+현재 구현은 차량 상태 수신, 제어 명령 송신, 기준 경로 기반 보상/종료 판정, BeV 관측, PPO 학습, 그리고 `MultiEgoSetting` 기반 soft reset까지 포함합니다.
 
-## 포함된 것
+## Current Setup
 
-- UDP 제어 송신기
-- 차량 상태 수신기
-- GT 객체 수신기
-- 충돌 상태 수신기
-- Scenario Load용 reset 래퍼
-- `reset()` / `step()` 구조의 Gym-like 환경
-- simple state 생성기
-- simple reward / done 조건
-- rule-based sanity-check 드라이버
+- MORAI UDP 기반 ego control / vehicle status 수발신
+- Gym-like RL environment
+- 기준 경로 투영 기반 reward / termination
+- vector / BeV / hybrid observation
+- Stable-Baselines3 PPO 학습 스크립트
+- reset 진단 스크립트
+- `MultiEgoSetting` 기반 ego pose reset
 
-## 빠른 시작
+## Why MultiEgoSetting Reset
 
-1. `morai_rl/example_config.toml`에서 포트와 경로를 맞춥니다.
-2. `path.csv_path`를 실제 주행할 기준 경로 CSV로 바꿉니다.
-3. `reset.command`에 Scenario Load를 호출하는 스크립트나 명령을 넣거나, UDP Scenario Load 설정을 채웁니다.
-4. 아래 순서로 확인합니다.
+기존에는 episode가 끝날 때마다 `Scenario Load`로 전체 scenario를 다시 불러오는 방식이었습니다.  
+Linux 환경에서 MORAI/Unity/Mono 조합에서 이 full reload가 반복될 때 시뮬레이터가 `SIGABRT`로 종료되는 문제가 있었고, 현재는 이를 피하기 위해 reset 시 scenario 전체를 다시 로드하지 않고 ego 차량만 지정 위치로 되돌리는 구조를 사용합니다.
+
+현재 `stage1_rl8_config.toml` 기준 reset 흐름은 다음과 같습니다.
+
+1. episode 종료
+2. `MultiEgoSetting` UDP 전송
+3. ego 차량을 지정 pose로 이동
+4. `Parking` 상태로 4초 대기
+5. 다음 episode 시작
+6. 학습 step이 시작되면 control command에서 다시 `Drive` 제어가 들어감
+
+## Repository Layout
+
+- `config/`
+  runtime config dataclass / TOML loader
+- `core/`
+  reset manager, sync manager, common types
+- `envs/`
+  MORAI RL env, gym wrapper, reward, termination, observation
+- `io/`
+  UDP sender / receiver implementations
+- `maps/`
+  reference path, route corridor, BeV utilities
+- `baselines/`
+  simple lane follower baseline
+- `scripts/`
+  UDP 점검, reset 점검, PPO 학습, rule-based 주행 스크립트
+
+## Requirements
+
+기본적으로 아래 Python 패키지가 필요합니다.
 
 ```bash
-python -m morai_rl.scripts.check_udp_io --config morai_rl/example_config.toml
-python -m morai_rl.scripts.check_collision_udp --config morai_rl/example_config.toml
-python -m morai_rl.scripts.check_reset --config morai_rl/example_config.toml
-python -m morai_rl.scripts.check_step_loop --config morai_rl/example_config.toml
-python -m morai_rl.scripts.run_simple_driver --config morai_rl/example_config.toml
+pip install numpy gymnasium stable-baselines3 torch
+```
+
+선택적으로 BeV viewer를 보려면:
+
+```bash
+pip install pygame
+```
+
+## Main Configs
+
+- `example_config.toml`
+  기본 예제 설정
+- `safe_config.toml`
+  보다 보수적인 reset/load 검사용 설정
+- `stage1_rl5_config.toml`
+  RL5용 설정
+- `stage1_rl8_config.toml`
+  현재 주로 사용하는 RL8 설정
+
+현재 `stage1_rl8_config.toml`은 다음 전제를 둡니다.
+
+- scenario는 사용자가 이미 MORAI에서 직접 세팅해둠
+- 학습 코드가 시작된 뒤에는 `Scenario Load`를 사용하지 않음
+- reset은 `MultiEgoSetting`으로만 수행
+- reset target pose:
+  - `x = 140.71`
+  - `y = 1406.79`
+  - `z = -0.53`
+  - `roll = 0.354`
+  - `pitch = 0.319`
+  - `yaw = 91.494`
+- reset gear:
+  - `Parking(1)`
+
+## Quick Start
+
+가상환경을 활성화합니다.
+
+```bash
+source .venv/bin/activate
+```
+
+### 1. UDP 입출력 확인
+
+```bash
+python -m morai_rl.scripts.check_udp_io \
+  --config morai_rl/stage1_rl8_config.toml
 ```
 
 직접 제어 명령을 보내보려면:
 
 ```bash
 python -m morai_rl.scripts.check_udp_io \
-  --config morai_rl/example_config.toml \
+  --config morai_rl/stage1_rl8_config.toml \
   --send-command \
   --throttle 0.2 \
   --brake 0.0 \
   --steering 0.0
 ```
 
-기본 예제 설정은 MORAI `Ego Ctrl Cmd` UDP 형식에 맞춰
-`127.0.0.1:9095 -> 127.0.0.1:9096`으로 제어를 송신합니다.
-
-충돌 센서 수신 테스트:
+### 2. MultiEgoSetting reset 확인
 
 ```bash
-python -m morai_rl.scripts.check_collision_udp \
-  --config morai_rl/example_config.toml
+python -m morai_rl.scripts.check_reset \
+  --config morai_rl/stage1_rl8_config.toml \
+  --repeats 3 \
+  --sleep-sec 1
 ```
 
-기본 예제 설정은 충돌 패킷을 `127.0.0.1:9092`에서 수신하도록 되어 있습니다.
-MORAI가 다른 PC에서 송신 중이라면 `--host 0.0.0.0`로 바꿔서 바인딩하면 됩니다.
+정상 동작 시 `reset_strategy=multi_ego_setting` 이 출력되고, 차량이 같은 위치로 복귀해야 합니다.
 
-UDP Scenario Load 테스트:
+### 3. 짧은 step loop 확인
+
+```bash
+python -m morai_rl.scripts.check_step_loop \
+  --config morai_rl/stage1_rl8_config.toml \
+  --steps 50
+```
+
+### 4. PPO 학습 시작
+
+```bash
+python -m morai_rl.scripts.train_ppo \
+  --config morai_rl/stage1_rl8_config.toml \
+  --timesteps 50000 \
+  --save-dir runs/ppo_morai \
+  --run-name rl8_multi_ego_reset
+```
+
+짧은 smoke test는:
+
+```bash
+python -m morai_rl.scripts.train_ppo \
+  --config morai_rl/stage1_rl8_config.toml \
+  --timesteps 5000 \
+  --run-name smoke_test
+```
+
+## Useful Scripts
+
+### Send one MultiEgoSetting packet
+
+차량을 지정 좌표로 한 번 보내보는 테스트입니다.
+
+```bash
+python -m morai_rl.scripts.send_multi_ego_setting \
+  --config morai_rl/stage1_rl8_config.toml \
+  --x 140.71 --y 1406.79 --z -0.53 \
+  --roll-deg 0.354 --pitch-deg 0.319 --yaw-deg 91.494 \
+  --speed-kph 0 \
+  --gear 1
+```
+
+### Rule-based baseline
+
+```bash
+python -m morai_rl.scripts.run_simple_driver \
+  --config morai_rl/stage1_rl8_config.toml \
+  --episodes 1
+```
+
+### Scenario Load packet test
+
+현재 RL8 설정은 scenario load를 reset에 사용하지 않지만, 별도 테스트는 가능합니다.
 
 ```bash
 python -m morai_rl.scripts.send_scenario_load \
   --config morai_rl/example_config.toml \
-  --file-name RL_0319 \
+  --file-name RL_9 \
   --delete-all
 ```
 
-기본 reset 예제 설정은 `127.0.0.1:9103 -> 127.0.0.1:9104` 포트와
-`LoadScenario` 헤더 이름을 사용합니다.
+## Observation and Learning
 
-## 기준 경로 CSV 형식
+현재 환경은 아래 요소를 사용합니다.
 
-아래 헤더를 권장합니다.
+- reference path projection
+- route corridor
+- progress-based reward
+- off-track / no-progress / reverse-progress termination
+- steering-only action mode
+- local BeV observation
 
-```csv
-x,y,yaw_deg
-123.4,567.8,90.0
-124.2,568.1,90.5
-```
+`train_ppo.py`는 기본적으로:
 
-`yaw_deg`가 없으면 인접 점으로 자동 계산합니다.
+- PPO
+- checkpoint 저장
+- crash 후 resume 시도
+- optional BeV viewer
 
-## reset.command 예시
+를 지원합니다.
 
-```toml
-[reset]
-command = "python /absolute/path/to/load_scenario.py"
-```
+## Known Notes
 
-지금 버전은 MORAI Scenario Load를 직접 구현하지 않고, 외부 명령을 연결하는 방식입니다.
-이미 시나리오 복원 스크립트가 있다면 그대로 붙일 수 있습니다.
+- MORAI Linux 환경에서 full `Scenario Load` 반복은 시뮬레이터 abort를 유발할 수 있습니다.
+- 현재 RL8 설정은 이를 피하기 위해 `MultiEgoSetting` reset을 사용합니다.
+- reset 안정화를 위해 reset 직후 `4초` 대기합니다.
+- reset packet은 `Parking(1)`으로 보내고, 실제 주행은 학습 step의 control command가 시작하면서 다시 `Drive`로 넘어갑니다.
 
-## 첫 체크리스트
+## Next Improvements
 
-- `check_udp_io`에서 ego 상태가 안정적으로 들어온다.
-- `check_reset`이 연속 10번 성공한다.
-- `check_step_loop`가 에러 없이 돈다.
-- `run_simple_driver`가 짧게라도 차선을 따라간다.
-
-## 다음 단계
-
-- reward 튜닝
-- action을 steering only에서 throttle까지 확장
-- 충돌/트랙 이탈 센서 반영
-- PPO/SAC 같은 RL 알고리즘 연결
-=======
-# RL_MORAI
-RL-based control strategy in MORAI_ver1
->>>>>>> 519b86c819e1065e67de1232fc98f36228836300
+- reset target pose를 시나리오별로 관리
+- collision 신호를 reward / termination에 더 적극 반영
+- SAC / TD3 등 다른 알고리즘 지원
+- training/evaluation config 분리
+- reset diagnostics logging 강화
