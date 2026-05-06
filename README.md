@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MORAI RL Starter
 
 MORAI UDP 기반 강화학습 1단계를 바로 시작할 수 있도록 만든 최소 골격입니다.
@@ -100,3 +101,7 @@ command = "python /absolute/path/to/load_scenario.py"
 - action을 steering only에서 throttle까지 확장
 - 충돌/트랙 이탈 센서 반영
 - PPO/SAC 같은 RL 알고리즘 연결
+=======
+# RL_MORAI
+RL-based control strategy in MORAI_ver1
+>>>>>>> 519b86c819e1065e67de1232fc98f36228836300
