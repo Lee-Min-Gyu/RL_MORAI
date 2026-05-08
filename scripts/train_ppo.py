@@ -229,7 +229,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timesteps", type=int, default=50_000)
     parser.add_argument("--save-dir", default="runs/ppo_morai")
     parser.add_argument("--run-name", default="default")
-    parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
     parser.add_argument("--n-steps", type=int, default=512)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--gamma", type=float, default=0.99)

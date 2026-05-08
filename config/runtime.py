@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -7,7 +8,110 @@ from typing import Any
 try:
     import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib
+    try:
+        import tomli as tomllib
+    except ModuleNotFoundError:
+        tomllib = None
+
+
+def _strip_inline_comment(line: str) -> str:
+    in_quote = False
+    quote_char = ""
+    escaped = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            if not in_quote:
+                in_quote = True
+                quote_char = char
+            elif quote_char == char:
+                in_quote = False
+                quote_char = ""
+            continue
+        if char == "#" and not in_quote:
+            return line[:index]
+    return line
+
+
+def _split_array_items(raw: str) -> list[str]:
+    body = raw.strip()[1:-1].strip()
+    if not body:
+        return []
+    items: list[str] = []
+    start = 0
+    in_quote = False
+    quote_char = ""
+    escaped = False
+    for index, char in enumerate(body):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            if not in_quote:
+                in_quote = True
+                quote_char = char
+            elif quote_char == char:
+                in_quote = False
+                quote_char = ""
+            continue
+        if char == "," and not in_quote:
+            items.append(body[start:index].strip())
+            start = index + 1
+    items.append(body[start:].strip())
+    return items
+
+
+def _parse_simple_toml_value(raw: str) -> Any:
+    value = raw.strip()
+    if value in {"true", "false"}:
+        return value == "true"
+    if value.startswith("[") and value.endswith("]"):
+        return [_parse_simple_toml_value(item) for item in _split_array_items(value)]
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
+        return ast.literal_eval(value)
+    try:
+        if any(char in value for char in ".eE"):
+            return float(value)
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _load_simple_toml(path: Path) -> dict[str, Any]:
+    # Minimal fallback for this project's flat TOML configs on Python 3.10 without tomli.
+    raw: dict[str, Any] = {}
+    current: dict[str, Any] = raw
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            stripped = _strip_inline_comment(line).strip()
+            if not stripped:
+                continue
+            if stripped.startswith("[") and stripped.endswith("]"):
+                section_name = stripped[1:-1].strip()
+                current = raw.setdefault(section_name, {})
+                continue
+            if "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            current[key.strip()] = _parse_simple_toml_value(value)
+    return raw
+
+
+def _load_toml(path: Path) -> dict[str, Any]:
+    if tomllib is not None:
+        with path.open("rb") as handle:
+            return tomllib.load(handle)
+    return _load_simple_toml(path)
 
 
 @dataclass
@@ -38,6 +142,11 @@ class EnvConfig:
     steering_delta_penalty_scale: float = 0.02
     brake_penalty_scale: float = 0.01
     boundary_proximity_penalty_scale: float = 0.2
+    boundary_proximity_margin_m: float = 1.0
+    lateral_error_penalty_scale: float = 0.0
+    lateral_error_penalty_clip_m: float = 3.0
+    heading_error_penalty_scale: float = 0.0
+    heading_error_penalty_clip_rad: float = 1.0
     off_track_penalty: float = 100.0
     done_stop_duration_sec: float = 0.5
     off_track_distance_m: float = 3.0
@@ -131,6 +240,9 @@ class RouteConfig:
 @dataclass
 class ObservationConfig:
     mode: str = "vector"
+    vector_profile: str = "legacy"
+    lookahead_distances_m: list[float] = field(default_factory=lambda: [5.0, 10.0])
+    guide_dropout_prob: float = 0.0
 
 
 @dataclass
@@ -173,8 +285,7 @@ def _merge_dataclass(dc_cls: type[Any], raw: dict[str, Any]) -> Any:
 
 def load_config(path: str | Path) -> AppConfig:
     config_path = Path(path)
-    with config_path.open("rb") as handle:
-        raw = tomllib.load(handle)
+    raw = _load_toml(config_path)
 
     udp = _merge_dataclass(UdpConfig, raw.get("udp", {}))
     env = _merge_dataclass(EnvConfig, raw.get("env", {}))

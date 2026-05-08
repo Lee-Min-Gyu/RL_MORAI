@@ -10,7 +10,7 @@ from morai_rl.config.runtime import AppConfig, load_config
 from morai_rl.core.reset_manager import ScenarioResetManager
 from morai_rl.core.sync_manager import StepClock
 from morai_rl.core.types import ControlCommand, Observation, VehicleState
-from morai_rl.envs.observation import build_observation
+from morai_rl.envs.observation import build_observation, resolve_vector_observation_keys
 from morai_rl.envs.reward import compute_reward
 from morai_rl.envs.termination import evaluate_termination
 from morai_rl.io.control_udp import UdpControlClient
@@ -165,6 +165,10 @@ class MoraiRLEnv:
         self.last_episode_end_progress_m = 0.0
         self.last_episode_duration_sec = 0.0
         self._receivers_started = False
+        self.vector_observation_keys = resolve_vector_observation_keys(
+            config.observation.vector_profile,
+            config.observation.lookahead_distances_m,
+        )
 
     @classmethod
     def from_toml(cls, config_path: str | Path) -> "MoraiRLEnv":
@@ -233,6 +237,10 @@ class MoraiRLEnv:
             progress_delta_m=self.last_progress_delta_m,
             observation_mode=self.config.observation.mode,
             bev_renderer=self.local_bev_renderer,
+            vector_profile=self.config.observation.vector_profile,
+            guide_dropout_prob=self.config.observation.guide_dropout_prob,
+            lookahead_distances_m=self.config.observation.lookahead_distances_m,
+            reference_path=self.reference_path,
         )
         info = {
             "state": outcome.initial_state.to_dict(),
@@ -252,6 +260,7 @@ class MoraiRLEnv:
             "previous_episode_progress_m": self.last_episode_end_progress_m,
             "previous_episode_duration_sec": self.last_episode_duration_sec,
             "observation_named": observation.named,
+            "observation_vector_keys": self.vector_observation_keys,
             "observation_vector": observation.vector_values,
             "observation_mode": self.config.observation.mode,
             "observation_bev_channels": list(self.local_bev_renderer.channel_names)
@@ -307,6 +316,10 @@ class MoraiRLEnv:
             progress_delta_m=self.last_progress_delta_m,
             observation_mode=self.config.observation.mode,
             bev_renderer=self.local_bev_renderer,
+            vector_profile=self.config.observation.vector_profile,
+            guide_dropout_prob=self.config.observation.guide_dropout_prob,
+            lookahead_distances_m=self.config.observation.lookahead_distances_m,
+            reference_path=self.reference_path,
         )
         bev_contact = self._compute_bev_contact_metrics(observation)
         footprint_off_track = bool(bev_contact["available"]) and int(bev_contact["outside_pixels"]) > 0
@@ -328,6 +341,7 @@ class MoraiRLEnv:
         )
         reward, reward_terms = compute_reward(
             progress_delta_m=progress_delta,
+            projection=projection,
             corridor_projection=corridor_projection,
             action=command,
             previous_action=self.previous_action,
@@ -339,6 +353,12 @@ class MoraiRLEnv:
             step_penalty_value=self.config.env.step_penalty,
             steering_delta_penalty_scale=self.config.env.steering_delta_penalty_scale,
             brake_penalty_scale=self.config.env.brake_penalty_scale,
+            lateral_error_penalty_scale=self.config.env.lateral_error_penalty_scale,
+            lateral_error_penalty_clip_m=self.config.env.lateral_error_penalty_clip_m,
+            heading_error_penalty_scale=self.config.env.heading_error_penalty_scale,
+            heading_error_penalty_clip_rad=self.config.env.heading_error_penalty_clip_rad,
+            boundary_proximity_penalty_scale=self.config.env.boundary_proximity_penalty_scale,
+            boundary_proximity_margin_m=self.config.env.boundary_proximity_margin_m,
             off_track_penalty_value=self.config.env.off_track_penalty,
             stalled_penalty_value=self.config.env.stalled_penalty,
         )
@@ -370,6 +390,7 @@ class MoraiRLEnv:
             ),
             "scenario_name": self.current_scenario_name,
             "observation_named": observation.named,
+            "observation_vector_keys": self.vector_observation_keys,
             "observation_vector": observation.vector_values,
             "observation_mode": self.config.observation.mode,
             "observation_bev_channels": list(self.local_bev_renderer.channel_names)
@@ -453,6 +474,10 @@ class MoraiRLEnv:
                 progress_delta_m=0.0,
                 observation_mode=self.config.observation.mode,
                 bev_renderer=self.local_bev_renderer,
+                vector_profile=self.config.observation.vector_profile,
+                guide_dropout_prob=self.config.observation.guide_dropout_prob,
+                lookahead_distances_m=self.config.observation.lookahead_distances_m,
+                reference_path=self.reference_path,
             )
             state_dict = self.last_state.to_dict()
             projection_dict = projection.to_dict()
@@ -512,6 +537,10 @@ class MoraiRLEnv:
                 progress_delta_m=0.0,
                 observation_mode=self.config.observation.mode,
                 bev_renderer=self.local_bev_renderer,
+                vector_profile=self.config.observation.vector_profile,
+                guide_dropout_prob=self.config.observation.guide_dropout_prob,
+                lookahead_distances_m=self.config.observation.lookahead_distances_m,
+                reference_path=self.reference_path,
             )
             state_dict = None
             projection_dict = None
@@ -534,6 +563,7 @@ class MoraiRLEnv:
             ),
             "scenario_name": self.current_scenario_name,
             "observation_named": observation.named,
+            "observation_vector_keys": self.vector_observation_keys,
             "observation_vector": observation.vector_values,
             "observation_mode": self.config.observation.mode,
             "observation_bev_channels": list(self.local_bev_renderer.channel_names)

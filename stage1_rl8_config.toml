@@ -10,20 +10,25 @@ control_mode = "morai_ctrl_cmd"
 entity_id = "EGO"
 
 [env]
-step_hz = 10.0
+step_hz = 30.0
 action_repeat = 1
-max_steps = 500
+max_steps = 1500
 target_speed_mps = 12.0
 steering_only_control = true
-steering_only_fixed_throttle = 0.3
+steering_only_fixed_throttle = 0.35
 steering_only_fixed_brake = 0.0
 progress_reward_scale = 6.0
 alive_bonus = 0.01
 step_penalty = 0.02
-steering_delta_penalty_scale = 0.5
+steering_delta_penalty_scale = 0.1
 brake_penalty_scale = 0.005
-boundary_proximity_penalty_scale = 0.05
-off_track_penalty = 20.0
+boundary_proximity_penalty_scale = 0.2
+boundary_proximity_margin_m = 1.0
+lateral_error_penalty_scale = 0.35
+lateral_error_penalty_clip_m = 3.0
+heading_error_penalty_scale = 0.75
+heading_error_penalty_clip_rad = 1.0
+off_track_penalty = 300.0
 done_stop_duration_sec = 0.5
 off_track_distance_m = 3.0
 stop_speed_threshold_mps = 0.3
@@ -106,7 +111,10 @@ corridor_selection_key = "selected_link_ids"
 corridor_margin_m = 0.5
 
 [observation]
-mode = "bev"
+mode = "hybrid"
+vector_profile = "guide"
+lookahead_distances_m = [5.0, 10.0, 15.0]
+guide_dropout_prob = 0.0
 
 [bev]
 width_px = 96

@@ -16,7 +16,7 @@ else:
 
 from morai_rl.core.types import ControlCommand
 from morai_rl.envs.morai_env import MoraiRLEnv
-from morai_rl.envs.observation import VECTOR_OBSERVATION_KEYS
+from morai_rl.envs.observation import resolve_vector_observation_keys
 
 
 class GymMoraiEnv(gym.Env if gym is not None else object):
@@ -35,7 +35,11 @@ class GymMoraiEnv(gym.Env if gym is not None else object):
         self.observation_mode = self.env.config.observation.mode.strip().lower()
         self._latest_observation = None
         self._latest_info: dict | None = None
-        obs_dim = len(VECTOR_OBSERVATION_KEYS)
+        self.vector_observation_keys = resolve_vector_observation_keys(
+            self.env.config.observation.vector_profile,
+            self.env.config.observation.lookahead_distances_m,
+        )
+        obs_dim = len(self.vector_observation_keys)
         if self.observation_mode == "vector":
             self.observation_space = spaces.Box(
                 low=-np.inf,
