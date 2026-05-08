@@ -1,3 +1,7 @@
+# Last Updated 2026.05.08
+
+Simulator의 동작 방식을 Asynchronous에서 Synchronous 방식으로 옮기기 위해 UDP 통신 기반에서 ROS2 통신 기반으로 옮김. 더이상 활용하지 않음
+
 # MORAI RL
 
 MORAI Simulator UDP I/O를 사용해 강화학습 실험을 돌리기 위한 RL 환경입니다.  
