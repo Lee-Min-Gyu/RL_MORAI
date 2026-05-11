@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>morai_rl</name>
+  <version>0.1.0</version>
+  <description>ROS2 MORAI reinforcement learning environment.</description>
+  <maintainer email="mglee@example.com">mglee</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>morai_ros2_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

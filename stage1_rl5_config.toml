@@ -1,0 +1,116 @@
+[udp]
+host = "127.0.0.1"
+control_port = 9095
+control_bind_host = "127.0.0.1"
+control_bind_port = 0
+vehicle_status_port = 9094
+object_port = 9094
+collision_port = 9092
+control_mode = "morai_ctrl_cmd"
+entity_id = "EGO"
+
+[env]
+step_hz = 10.0
+action_repeat = 1
+max_steps = 500
+target_speed_mps = 12.0
+progress_reward_scale = 6.0
+alive_bonus = 0.01
+step_penalty = 0.02
+steering_delta_penalty_scale = 0.01
+brake_penalty_scale = 0.005
+boundary_proximity_penalty_scale = 0.05
+off_track_penalty = 20.0
+done_stop_duration_sec = 0.5
+off_track_distance_m = 3.0
+stop_speed_threshold_mps = 0.3
+stop_timeout_steps = 40
+state_timeout_sec = 1.0
+no_progress_window_steps = 100
+no_progress_epsilon_m = 0.5
+reverse_progress_window_steps = 10
+reverse_progress_threshold_m = -0.5
+stalled_penalty = 1.0
+blocked_collision_window_steps = 5
+blocked_collision_speed_threshold_mps = 0.3
+blocked_collision_min_throttle = 0.3
+blocked_collision_max_brake = 0.1
+blocked_collision_progress_epsilon_m = 0.15
+blocked_collision_boundary_overlap_ratio = 0.05
+blocked_collision_outside_ratio = 0.15
+blocked_collision_penalty = 20.0
+
+[reset]
+command = ""
+scenario_load_enabled = true
+scenario_load_bind_host = "127.0.0.1"
+scenario_load_bind_port = 0
+scenario_load_destination_host = "127.0.0.1"
+scenario_load_destination_port = 9103
+scenario_load_file_name = "RL_5"
+scenario_load_file_names = ["RL_5"]
+scenario_selection_mode = "fixed"
+scenario_delete_all = true
+scenario_load_network_connection_data = true
+scenario_load_ego_vehicle_data = true
+scenario_load_surrounding_vehicle_data = false
+scenario_load_pedestrian_data = false
+scenario_load_object_data = false
+scenario_set_pause = false
+reset_mode = "multi_ego_setting"
+full_reload_interval = 20
+multi_ego_setting_enabled = true
+multi_ego_setting_bind_host = "127.0.0.1"
+multi_ego_setting_bind_port = 0
+multi_ego_setting_destination_host = "127.0.0.1"
+multi_ego_setting_destination_port = 7504
+multi_ego_setting_ego_index = 0
+multi_ego_setting_camera_index = 0
+multi_ego_setting_gear = 4
+multi_ego_setting_ctrl_mode = 2
+multi_ego_setting_send_repeats = 3
+multi_ego_setting_send_interval_sec = 0.05
+multi_ego_setting_post_command_wait_sec = 1.5
+multi_ego_setting_position_tolerance_m = 1.0
+multi_ego_setting_yaw_tolerance_deg = 20.0
+command_timeout_sec = 20.0
+min_reset_interval_sec = 15.0
+post_command_wait_sec = 8.0
+stable_speed_tolerance_mps = 0.3
+stable_position_tolerance_m = 0.5
+stable_frames_required = 8
+reset_timeout_sec = 30.0
+allow_unstable_reset = false
+max_reset_attempts = 1
+reset_retry_wait_sec = 10.0
+
+[path]
+csv_path = "../output/reference_path_centerline.csv"
+
+[route]
+enabled = true
+link_set_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PG_K-City/link_set.json"
+corridor_selection_path = "../output/selected_links.json"
+corridor_selection_key = "selected_link_ids"
+corridor_margin_m = 0.5
+
+[observation]
+mode = "bev"
+
+[bev]
+width_px = 96
+height_px = 96
+front_range_m = 30.0
+rear_range_m = 10.0
+left_range_m = 20.0
+right_range_m = 20.0
+include_lane_marking = false
+static_bev_npz_path = "../output/kcity_selected_links_bev/static_bev.npz"
+static_bev_metadata_path = "../output/kcity_selected_links_bev/static_bev_metadata.json"
+lane_marking_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PG_K-City/lane_marking_set.json"
+corridor_boundary_width_m = 0.3
+centerline_width_m = 0.3
+lane_marking_min_width_m = 0.15
+ego_vehicle_length_m = 4.845
+ego_vehicle_width_m = 1.835
+ego_vehicle_offset_forward_m = 0.0

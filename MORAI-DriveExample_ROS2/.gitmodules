@@ -1,0 +1,6 @@
+[submodule "morai_standard/morai_standard/autonomous_driving"]
+	path = morai_standard/morai_standard/autonomous_driving
+	url = https://github.com/MORAI-Autonomous/MORAI-ADModule.git
+[submodule "morai_ros2_msgs"]
+	path = morai_ros2_msgs
+	url = https://github.com/MORAI-Autonomous/MORAI-ROS2_morai_msgs.git
