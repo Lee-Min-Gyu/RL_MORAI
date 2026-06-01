@@ -1,0 +1,44 @@
+{
+  "map_name": "R_KR_PG_K-City",
+  "generated_at_utc": "2026-03-18T11:31:34.733469+00:00",
+  "image_size": {
+    "width_px": 1677,
+    "height_px": 5015
+  },
+  "supersampled_image_size": {
+    "width_px": 6703,
+    "height_px": 20057
+  },
+  "resolution_m_per_px": 0.2,
+  "render_resolution_m_per_px": 0.05,
+  "supersample_factor": 4,
+  "margin_m": 20.0,
+  "channels": [
+    "drivable_area",
+    "lane_marking"
+  ],
+  "pixel_transform": {
+    "description": "col = (x - min_x) / resolution, row = (max_y - y) / resolution",
+    "min_x": -96.01504168182146,
+    "max_y": 1938.507000000216
+  },
+  "world_bounds": {
+    "min_x": -96.01504168182146,
+    "min_y": 935.7085478782659,
+    "max_x": 239.08290026346742,
+    "max_y": 1938.507000000216
+  },
+  "global_coordinate_system": "+proj=utm +zone=52 +ellps=WGS84 +units=m +no_defs",
+  "local_origin_in_global": [
+    302459.942,
+    4122635.537,
+    28.991
+  ],
+  "rendering_options": {
+    "link_resample_spacing_m": 0.2,
+    "lane_resample_spacing_m": 0.1,
+    "link_width_margin_m": 0.15,
+    "drivable_closing_kernel_px": 3,
+    "drivable_closing_iterations": 1
+  }
+}
