@@ -1,2 +1,1 @@
-"""UDP communication utilities."""
-
+"""ROS communication utilities."""

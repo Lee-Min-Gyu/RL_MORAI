@@ -376,7 +376,7 @@ def main() -> None:
         "--output-csv",
         "--output-file",
         dest="output_csv",
-        default="morai_rl/data/reference_path_from_links.csv",
+        default="output/reference_path_centerline.csv",
         help="Where to save the generated reference path CSV.",
     )
     parser.add_argument(

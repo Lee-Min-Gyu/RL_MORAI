@@ -15,7 +15,6 @@ else:
 
 from morai_rl.config.runtime import load_config
 from morai_rl.io.ros_sync import RosVehicleStatusReceiver
-from morai_rl.io.vehicle_status_udp import VehicleStatusReceiver
 from morai_rl.maps.local_bev import LocalBeVRenderer
 from morai_rl.maps.reference_path import ReferencePath
 from morai_rl.maps.route_corridor import RouteCorridor
@@ -55,23 +54,17 @@ def build_renderer(config_path: str) -> tuple[object, LocalBeVRenderer, str, str
             margin_m=config.route.corridor_margin_m,
         )
 
-    if config.ros.enabled:
-        receiver = RosVehicleStatusReceiver(
-            topic=config.ros.ego_topic,
-            entity_id=config.ros.entity_id,
-            imu_topic=config.ros.imu_topic,
-            node_name=config.ros.node_name,
-            anonymous=config.ros.anonymous,
-        )
-        transport_name = "ROS"
-        transport_detail = config.ros.ego_topic
-    else:
-        receiver = VehicleStatusReceiver(
-            host=config.udp.host,
-            port=config.udp.vehicle_status_port,
-        )
-        transport_name = "UDP"
-        transport_detail = f"{config.udp.host}:{config.udp.vehicle_status_port}"
+    if not config.ros.enabled:
+        raise ValueError("view_local_bev now supports only ROS input.")
+    receiver = RosVehicleStatusReceiver(
+        topic=config.ros.ego_topic,
+        entity_id=config.ros.entity_id,
+        imu_topic=config.ros.imu_topic,
+        node_name=config.ros.node_name,
+        anonymous=config.ros.anonymous,
+    )
+    transport_name = "ROS"
+    transport_detail = config.ros.ego_topic
     renderer = LocalBeVRenderer(
         reference_path=reference_path,
         route_corridor=corridor,

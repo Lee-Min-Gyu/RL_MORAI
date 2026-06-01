@@ -13,17 +13,12 @@ from morai_rl.core.types import ControlCommand, Observation, VehicleState
 from morai_rl.envs.observation import build_observation, resolve_vector_observation_keys
 from morai_rl.envs.reward import compute_reward
 from morai_rl.envs.termination import evaluate_termination
-from morai_rl.io.control_udp import UdpControlClient
-from morai_rl.io.multi_ego_setting_udp import MultiEgoSettingClient
-from morai_rl.io.object_udp import ObjectStatusReceiver
 from morai_rl.io.ros_sync import (
     RosControlClient,
     RosObjectStatusReceiver,
     RosSyncScenarioLoadClient,
     RosVehicleStatusReceiver,
 )
-from morai_rl.io.scenario_load_udp import ScenarioLoadClient
-from morai_rl.io.vehicle_status_udp import VehicleStatusReceiver
 from morai_rl.maps.local_bev import LocalBeVRenderer
 from morai_rl.maps.reference_path import ReferencePath
 from morai_rl.maps.route_corridor import RouteCorridor
@@ -31,65 +26,44 @@ from morai_rl.maps.route_corridor import RouteCorridor
 
 class MoraiRLEnv:
     """
-    Minimal Gym-like environment over MORAI UDP.
-
-    This starter intentionally stays simple:
-    - fixed-size state vector
-    - external Scenario Load reset trigger
-    - optional object receiver, unused in the first phase
+    Gym-like environment for MORAI ROS synchronous mode.
     """
 
     def __init__(self, config: AppConfig) -> None:
         self.config = config
-        if config.ros.enabled:
-            self.control_client = RosControlClient(
-                ctrl_topic=config.ros.ctrl_topic,
-                use_sync_mode=config.ros.use_sync_mode,
-                user_id=config.ros.user_id,
-                time_step=config.ros.time_step,
-                sensor_capture=config.ros.sensor_capture,
-                sync_info_topic=config.ros.sync_info_topic,
-                sync_mode_cmd_service=config.ros.sync_mode_cmd_service,
-                sync_ctrl_cmd_service=config.ros.sync_ctrl_cmd_service,
-                sync_set_gear_service=config.ros.sync_set_gear_service,
-                wait_for_tick_service=config.ros.wait_for_tick_service,
-                service_timeout_sec=config.ros.service_timeout_sec,
-                wait_for_tick_timeout_sec=config.ros.wait_for_tick_timeout_sec,
-                start_sync_on_start=config.ros.start_sync_on_start,
-                stop_sync_on_close=config.ros.stop_sync_on_close,
-                node_name=config.ros.node_name,
-                anonymous=config.ros.anonymous,
-            )
-            self.vehicle_receiver = RosVehicleStatusReceiver(
-                topic=config.ros.ego_topic,
-                entity_id=config.ros.entity_id,
-                imu_topic=config.ros.imu_topic,
-                node_name=config.ros.node_name,
-                anonymous=config.ros.anonymous,
-            )
-            self.control_client.attach_vehicle_receiver(self.vehicle_receiver)
-            self.object_receiver = RosObjectStatusReceiver(
-                topic=config.ros.object_topic,
-                node_name=config.ros.node_name,
-                anonymous=config.ros.anonymous,
-            )
-        else:
-            self.control_client = UdpControlClient(
-                host=config.udp.host,
-                port=config.udp.control_port,
-                mode=config.udp.control_mode,
-                entity_id=config.udp.entity_id,
-                bind_host=config.udp.control_bind_host,
-                bind_port=config.udp.control_bind_port,
-            )
-            self.vehicle_receiver = VehicleStatusReceiver(
-                host=config.udp.host,
-                port=config.udp.vehicle_status_port,
-            )
-            self.object_receiver = ObjectStatusReceiver(
-                host=config.udp.host,
-                port=config.udp.object_port,
-            )
+        if not config.ros.enabled or not config.ros.use_sync_mode:
+            raise ValueError("MoraiRLEnv now supports only ROS synchronous mode.")
+        self.control_client = RosControlClient(
+            ctrl_topic=config.ros.ctrl_topic,
+            use_sync_mode=config.ros.use_sync_mode,
+            user_id=config.ros.user_id,
+            time_step=config.ros.time_step,
+            sensor_capture=config.ros.sensor_capture,
+            sync_info_topic=config.ros.sync_info_topic,
+            sync_mode_cmd_service=config.ros.sync_mode_cmd_service,
+            sync_ctrl_cmd_service=config.ros.sync_ctrl_cmd_service,
+            sync_set_gear_service=config.ros.sync_set_gear_service,
+            wait_for_tick_service=config.ros.wait_for_tick_service,
+            service_timeout_sec=config.ros.service_timeout_sec,
+            wait_for_tick_timeout_sec=config.ros.wait_for_tick_timeout_sec,
+            start_sync_on_start=config.ros.start_sync_on_start,
+            stop_sync_on_close=config.ros.stop_sync_on_close,
+            node_name=config.ros.node_name,
+            anonymous=config.ros.anonymous,
+        )
+        self.vehicle_receiver = RosVehicleStatusReceiver(
+            topic=config.ros.ego_topic,
+            entity_id=config.ros.entity_id,
+            imu_topic=config.ros.imu_topic,
+            node_name=config.ros.node_name,
+            anonymous=config.ros.anonymous,
+        )
+        self.control_client.attach_vehicle_receiver(self.vehicle_receiver)
+        self.object_receiver = RosObjectStatusReceiver(
+            topic=config.ros.object_topic,
+            node_name=config.ros.node_name,
+            anonymous=config.ros.anonymous,
+        )
         self.reference_path = ReferencePath.from_csv(config.path.csv_path)
         self.route_corridor = None
         if config.route.enabled:
@@ -124,57 +98,26 @@ class MoraiRLEnv:
             )
         scenario_loader = None
         if config.reset.scenario_load_enabled:
-            if config.ros.enabled and config.ros.use_sync_mode:
-                scenario_loader = RosSyncScenarioLoadClient(
-                    service_name=config.ros.sync_scenario_load_service,
-                    user_id=config.ros.user_id,
-                    file_name=config.reset.scenario_load_file_name,
-                    delete_all=config.reset.scenario_delete_all,
-                    load_network_connection_data=config.reset.scenario_load_network_connection_data,
-                    load_ego_vehicle_data=config.reset.scenario_load_ego_vehicle_data,
-                    load_surrounding_vehicle_data=config.reset.scenario_load_surrounding_vehicle_data,
-                    load_pedestrian_data=config.reset.scenario_load_pedestrian_data,
-                    load_object_data=config.reset.scenario_load_object_data,
-                    set_pause=config.reset.scenario_set_pause,
-                    service_timeout_sec=config.ros.service_timeout_sec,
-                    control_client=self.control_client,
-                    post_load_ticks=config.ros.sync_scenario_load_post_ticks,
-                    post_load_gear=config.ros.sync_scenario_load_post_gear,
-                )
-            else:
-                scenario_loader = ScenarioLoadClient(
-                    bind_host=config.reset.scenario_load_bind_host,
-                    bind_port=config.reset.scenario_load_bind_port,
-                    destination_host=config.reset.scenario_load_destination_host,
-                    destination_port=config.reset.scenario_load_destination_port,
-                    file_name=config.reset.scenario_load_file_name,
-                    delete_all=config.reset.scenario_delete_all,
-                    load_network_connection_data=config.reset.scenario_load_network_connection_data,
-                    load_ego_vehicle_data=config.reset.scenario_load_ego_vehicle_data,
-                    load_surrounding_vehicle_data=config.reset.scenario_load_surrounding_vehicle_data,
-                    load_pedestrian_data=config.reset.scenario_load_pedestrian_data,
-                    load_object_data=config.reset.scenario_load_object_data,
-                    set_pause=config.reset.scenario_set_pause,
-                )
-        multi_ego_client = None
-        if config.reset.multi_ego_setting_enabled:
-            multi_ego_client = MultiEgoSettingClient(
-                bind_host=config.reset.multi_ego_setting_bind_host,
-                bind_port=config.reset.multi_ego_setting_bind_port,
-                destination_host=config.reset.multi_ego_setting_destination_host,
-                destination_port=config.reset.multi_ego_setting_destination_port,
-                ego_index=config.reset.multi_ego_setting_ego_index,
-                camera_index=config.reset.multi_ego_setting_camera_index,
-                gear=config.reset.multi_ego_setting_gear,
-                ctrl_mode=config.reset.multi_ego_setting_ctrl_mode,
-                send_repeats=config.reset.multi_ego_setting_send_repeats,
-                send_interval_sec=config.reset.multi_ego_setting_send_interval_sec,
+            scenario_loader = RosSyncScenarioLoadClient(
+                service_name=config.ros.sync_scenario_load_service,
+                user_id=config.ros.user_id,
+                file_name=config.reset.scenario_load_file_name,
+                delete_all=config.reset.scenario_delete_all,
+                load_network_connection_data=config.reset.scenario_load_network_connection_data,
+                load_ego_vehicle_data=config.reset.scenario_load_ego_vehicle_data,
+                load_surrounding_vehicle_data=config.reset.scenario_load_surrounding_vehicle_data,
+                load_pedestrian_data=config.reset.scenario_load_pedestrian_data,
+                load_object_data=config.reset.scenario_load_object_data,
+                set_pause=config.reset.scenario_set_pause,
+                service_timeout_sec=config.ros.service_timeout_sec,
+                control_client=self.control_client,
+                post_load_ticks=config.ros.sync_scenario_load_post_ticks,
+                post_load_gear=config.ros.sync_scenario_load_post_gear,
             )
         self.reset_manager = ScenarioResetManager(
             vehicle_receiver=self.vehicle_receiver,
             command=config.reset.command,
             scenario_loader=scenario_loader,
-            multi_ego_client=multi_ego_client,
             reset_mode=config.reset.reset_mode,
             full_reload_interval=config.reset.full_reload_interval,
             scenario_file_names=config.reset.scenario_load_file_names,
@@ -182,17 +125,6 @@ class MoraiRLEnv:
             command_timeout_sec=config.reset.command_timeout_sec,
             min_reset_interval_sec=config.reset.min_reset_interval_sec,
             post_command_wait_sec=config.reset.post_command_wait_sec,
-            multi_ego_post_command_wait_sec=config.reset.multi_ego_setting_post_command_wait_sec,
-            multi_ego_position_tolerance_m=config.reset.multi_ego_setting_position_tolerance_m,
-            multi_ego_yaw_tolerance_deg=config.reset.multi_ego_setting_yaw_tolerance_deg,
-            multi_ego_use_fixed_target=config.reset.multi_ego_setting_use_fixed_target,
-            multi_ego_target_x=config.reset.multi_ego_setting_target_x,
-            multi_ego_target_y=config.reset.multi_ego_setting_target_y,
-            multi_ego_target_z=config.reset.multi_ego_setting_target_z,
-            multi_ego_target_roll_deg=config.reset.multi_ego_setting_target_roll_deg,
-            multi_ego_target_pitch_deg=config.reset.multi_ego_setting_target_pitch_deg,
-            multi_ego_target_yaw_deg=config.reset.multi_ego_setting_target_yaw_deg,
-            multi_ego_target_speed_kph=config.reset.multi_ego_setting_target_speed_kph,
             stable_speed_tolerance_mps=config.reset.stable_speed_tolerance_mps,
             stable_position_tolerance_m=config.reset.stable_position_tolerance_m,
             stable_frames_required=config.reset.stable_frames_required,
@@ -495,8 +427,6 @@ class MoraiRLEnv:
             self._receivers_started = False
         if getattr(self.reset_manager, "scenario_loader", None) is not None:
             self.reset_manager.scenario_loader.close()
-        if getattr(self.reset_manager, "multi_ego_client", None) is not None:
-            self.reset_manager.multi_ego_client.close()
         self.control_client.close()
 
     def _ensure_receivers(self) -> None:
@@ -506,7 +436,7 @@ class MoraiRLEnv:
         self._receivers_started = True
 
     def _entity_id(self) -> str:
-        return self.config.ros.entity_id if self.config.ros.enabled else self.config.udp.entity_id
+        return self.config.ros.entity_id
 
     def _wait_for_latest_state(
         self,

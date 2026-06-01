@@ -1,2 +1,1 @@
-"""Starter package for MORAI UDP-based reinforcement learning."""
-
+"""MORAI ROS synchronous-mode reinforcement learning package."""

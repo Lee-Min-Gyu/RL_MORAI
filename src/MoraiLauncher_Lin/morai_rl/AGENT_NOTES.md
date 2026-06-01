@@ -14,7 +14,7 @@ This workspace is a ROS Noetic + MORAI synchronous-mode RL setup inside Docker.
 
 ## Current RL Design
 
-- Transport is ROS sync mode, not UDP.
+- Transport is ROS sync mode.
 - `RosControlClient.send()` advances MORAI one sync tick via `/SyncModeCtrlCmd` + `/SyncModeWaitForTick`.
 - `morai_env.py` skips extra `clock.sleep()` for ROS sync mode.
 - IMU yaw rate comes from `/imu` `angular_velocity.z` and is inserted into `VehicleState.wz`.

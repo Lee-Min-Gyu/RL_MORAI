@@ -115,19 +115,6 @@ def _load_toml(path: Path) -> dict[str, Any]:
 
 
 @dataclass
-class UdpConfig:
-    host: str = "127.0.0.1"
-    control_port: int = 6666
-    control_bind_host: str = ""
-    control_bind_port: int = 0
-    vehicle_status_port: int = 9093
-    object_port: int = 9094
-    collision_port: int = 9092
-    control_mode: str = "double3"
-    entity_id: str = "EGO"
-
-
-@dataclass
 class RosConfig:
     enabled: bool = False
     node_name: str = "morai_rl"
@@ -202,10 +189,6 @@ class EnvConfig:
 class ResetConfig:
     command: str = ""
     scenario_load_enabled: bool = False
-    scenario_load_bind_host: str = "127.0.0.1"
-    scenario_load_bind_port: int = 9103
-    scenario_load_destination_host: str = "127.0.0.1"
-    scenario_load_destination_port: int = 9104
     scenario_load_file_name: str = ""
     scenario_load_file_names: list[str] = field(default_factory=list)
     scenario_selection_mode: str = "fixed"
@@ -218,28 +201,6 @@ class ResetConfig:
     scenario_set_pause: bool = False
     reset_mode: str = "full_scenario_load"
     full_reload_interval: int = 0
-    multi_ego_setting_enabled: bool = False
-    multi_ego_setting_bind_host: str = "127.0.0.1"
-    multi_ego_setting_bind_port: int = 7604
-    multi_ego_setting_destination_host: str = "127.0.0.1"
-    multi_ego_setting_destination_port: int = 7504
-    multi_ego_setting_ego_index: int = 0
-    multi_ego_setting_camera_index: int = 0
-    multi_ego_setting_gear: int = 4
-    multi_ego_setting_ctrl_mode: int = 2
-    multi_ego_setting_send_repeats: int = 3
-    multi_ego_setting_send_interval_sec: float = 0.05
-    multi_ego_setting_post_command_wait_sec: float = 1.5
-    multi_ego_setting_position_tolerance_m: float = 1.0
-    multi_ego_setting_yaw_tolerance_deg: float = 20.0
-    multi_ego_setting_use_fixed_target: bool = False
-    multi_ego_setting_target_x: float | None = None
-    multi_ego_setting_target_y: float | None = None
-    multi_ego_setting_target_z: float | None = None
-    multi_ego_setting_target_roll_deg: float = 0.0
-    multi_ego_setting_target_pitch_deg: float = 0.0
-    multi_ego_setting_target_yaw_deg: float = 0.0
-    multi_ego_setting_target_speed_kph: float = 0.0
     command_timeout_sec: float = 20.0
     min_reset_interval_sec: float = 8.0
     post_command_wait_sec: float = 2.0
@@ -254,7 +215,7 @@ class ResetConfig:
 
 @dataclass
 class PathConfig:
-    csv_path: str = "morai_rl/data/reference_path_example.csv"
+    csv_path: str = "../output/reference_path_centerline.csv"
 
 
 @dataclass
@@ -305,7 +266,6 @@ class RecoveryConfig:
 
 @dataclass
 class AppConfig:
-    udp: UdpConfig
     ros: RosConfig
     env: EnvConfig
     reset: ResetConfig
@@ -327,7 +287,6 @@ def load_config(path: str | Path) -> AppConfig:
     config_path = Path(path)
     raw = _load_toml(config_path)
 
-    udp = _merge_dataclass(UdpConfig, raw.get("udp", {}))
     ros = _merge_dataclass(RosConfig, raw.get("ros", {}))
     env = _merge_dataclass(EnvConfig, raw.get("env", {}))
     reset = _merge_dataclass(ResetConfig, raw.get("reset", {}))
@@ -351,7 +310,6 @@ def load_config(path: str | Path) -> AppConfig:
         bev_cfg.lane_marking_path = str((config_path.parent / bev_cfg.lane_marking_path).resolve())
 
     return AppConfig(
-        udp=udp,
         ros=ros,
         env=env,
         reset=reset,
