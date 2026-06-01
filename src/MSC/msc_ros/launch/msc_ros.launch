@@ -1,0 +1,4 @@
+<launch>
+        <node pkg="msc_ros" type="api.py" name="msc_ros" output="screen" />
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find morai_standard)/rviz/morai_standard.rviz" />
+</launch>

@@ -1,0 +1,3 @@
+[submodule "ros_drive"]
+	path = ros_drive
+	url = git@github.com:MORAI-Autonomous/MORAI-DriveExample_ROS.git

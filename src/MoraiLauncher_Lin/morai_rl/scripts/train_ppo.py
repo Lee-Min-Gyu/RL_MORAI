@@ -1,0 +1,687 @@
+from __future__ import annotations
+
+import argparse
+import math
+from pathlib import Path
+import time
+
+import numpy as np
+
+try:
+    import gymnasium as gym
+    import torch as th
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.monitor import Monitor
+    from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
+except ModuleNotFoundError as exc:  # pragma: no cover - runtime guard
+    gym = None
+    th = None
+    PPO = None
+    Monitor = None
+    BaseCallback = None
+    CallbackList = None
+    CheckpointCallback = None
+    _SB3_IMPORT_ERROR = exc
+else:
+    _SB3_IMPORT_ERROR = None
+
+try:
+    import pygame
+except ModuleNotFoundError as exc:  # pragma: no cover - runtime guard
+    pygame = None
+    _PYGAME_IMPORT_ERROR = exc
+else:
+    _PYGAME_IMPORT_ERROR = None
+
+from morai_rl.config.runtime import load_config
+from morai_rl.core.simulator_process import launch_process, terminate_processes_by_name
+from morai_rl.envs.gym_wrapper import GymMoraiEnv
+from morai_rl.policies.roach_extractor import RoachCombinedExtractor
+
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
+
+CHANNEL_COLORS = {
+    "corridor_area": np.array([110, 110, 110], dtype=np.uint8),
+    "corridor_boundary": np.array([240, 80, 80], dtype=np.uint8),
+    "lane_marking": np.array([250, 220, 90], dtype=np.uint8),
+    "reference_centerline": np.array([80, 170, 255], dtype=np.uint8),
+    "ego_footprint": np.array([255, 220, 0], dtype=np.uint8),
+}
+
+
+class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else object):
+    def __init__(self, initial_step_log_count: int = 0) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        super().__init__()
+        self.episode_count = 0
+        self.initial_step_log_count = max(0, int(initial_step_log_count))
+        self._last_episode_wall_time: float | None = None
+        self._episode_term_sums: list[dict[str, float]] = []
+
+    def _ensure_term_buffers(self, env_count: int) -> None:
+        while len(self._episode_term_sums) < env_count:
+            self._episode_term_sums.append({})
+
+    def _on_step(self) -> bool:
+        dones = self.locals.get("dones")
+        infos = self.locals.get("infos")
+        if dones is None or infos is None:
+            return True
+
+        self._ensure_term_buffers(len(infos))
+
+        for env_index, (done, info) in enumerate(zip(dones, infos)):
+            self._print_initial_step(info)
+            reward_terms = info.get("reward_terms")
+            if isinstance(reward_terms, dict):
+                term_sums = self._episode_term_sums[env_index]
+                for key, value in reward_terms.items():
+                    if isinstance(value, (int, float)):
+                        term_sums[key] = term_sums.get(key, 0.0) + float(value)
+
+            if not done:
+                continue
+            self.episode_count += 1
+            now = time.monotonic()
+            self._last_episode_wall_time = now
+            reason = info.get("termination_reason")
+            steps = info.get("step_count")
+            progress_m = info.get("episode_progress_m")
+            scenario_name = info.get("scenario_name")
+            episode_reward = None
+            episode_info = info.get("episode")
+            if isinstance(episode_info, dict):
+                episode_reward = episode_info.get("r")
+            reward_terms = dict(self._episode_term_sums[env_index])
+            self._episode_term_sums[env_index] = {}
+            print(
+                "episode_end "
+                f"count={self.episode_count} "
+                f"total_timesteps={self.num_timesteps} "
+                f"scenario={scenario_name} "
+                f"reason={reason} "
+                f"steps={steps} "
+                f"progress_m={float(progress_m):+.2f}",
+                flush=True,
+            )
+            if episode_reward is not None:
+                try:
+                    print(f"  total_reward={float(episode_reward):+.3f}", flush=True)
+                except (TypeError, ValueError):
+                    print(f"  total_reward={episode_reward}", flush=True)
+            if isinstance(reward_terms, dict) and reward_terms:
+                print("  reward_terms", flush=True)
+                for key, value in reward_terms.items():
+                    if isinstance(value, (int, float)):
+                        signed_value = float(value)
+                        if key.endswith("_penalty"):
+                            signed_value = -signed_value
+                        print(f"    {key}={signed_value:+.3f}", flush=True)
+                    else:
+                        print(f"    {key}={value}", flush=True)
+        return True
+
+    def _print_initial_step(self, info: dict) -> None:
+        if self.initial_step_log_count <= 0:
+            return
+        step_count = info.get("step_count")
+        if not isinstance(step_count, int) or step_count < 1 or step_count > self.initial_step_log_count:
+            return
+        projection = info.get("projection") or {}
+        corridor = info.get("corridor") or {}
+        state = info.get("state") or {}
+        progress_m = float(info.get("episode_progress_m", 0.0))
+        progress_delta_m = float(info.get("progress_delta_m", 0.0))
+        lat = float(projection.get("lateral_error_m", 0.0))
+        head = float(projection.get("heading_error_rad", 0.0))
+        corridor_distance = float(corridor.get("corridor_distance_m", 0.0)) if corridor else 0.0
+        inside = bool(corridor.get("inside", True)) if corridor else True
+        speed = float(state.get("speed_mps", 0.0))
+        yaw = float(state.get("yaw_deg", 0.0))
+        print(
+            "episode_initial_step "
+            f"total_timesteps={self.num_timesteps} "
+            f"scenario={info.get('scenario_name')} "
+            f"step={step_count:03d} "
+            f"progress={progress_m:+.2f} "
+            f"dp={progress_delta_m:+.3f} "
+            f"lat={lat:+.3f} "
+            f"head={head:+.3f} "
+            f"corridor={corridor_distance:+.3f} "
+            f"inside={inside} "
+            f"speed={speed:.2f} "
+            f"yaw={yaw:.2f}",
+            flush=True,
+        )
+
+
+class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
+    def __init__(self, log_freq: int = 0) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        super().__init__()
+        self.log_freq = max(0, int(log_freq))
+        self._raw_batches: list[np.ndarray] = []
+        self._clipped_batches: list[np.ndarray] = []
+
+    def _on_step(self) -> bool:
+        if self.log_freq <= 0:
+            return True
+        raw = self.locals.get("actions")
+        if raw is None:
+            return True
+        raw_array = np.asarray(raw, dtype=np.float32)
+        if raw_array.ndim == 1:
+            raw_array = raw_array.reshape(1, -1)
+        clipped = self.locals.get("clipped_actions")
+        if clipped is None:
+            clipped_array = np.clip(raw_array, -1.0, 1.0)
+        else:
+            clipped_array = np.asarray(clipped, dtype=np.float32)
+            if clipped_array.ndim == 1:
+                clipped_array = clipped_array.reshape(1, -1)
+        self._raw_batches.append(raw_array.copy())
+        self._clipped_batches.append(clipped_array.copy())
+        if self.num_timesteps > 0 and self.num_timesteps % self.log_freq == 0:
+            self._print_and_clear()
+        return True
+
+    def _print_and_clear(self) -> None:
+        if not self._raw_batches:
+            return
+        raw = np.concatenate(self._raw_batches, axis=0)
+        clipped = np.concatenate(self._clipped_batches, axis=0)
+        self._raw_batches.clear()
+        self._clipped_batches.clear()
+        if raw.shape[1] >= 2:
+            accel_index = 0
+            steer_index = 1
+        else:
+            return
+        steer_raw = raw[:, steer_index]
+        steer_clipped = clipped[:, steer_index]
+        steer_clip_ratio = float(np.mean(np.abs(steer_raw - steer_clipped) > 1e-6))
+        print(
+            "action_stats "
+            f"total_timesteps={self.num_timesteps} "
+            f"raw_steer_mean={float(np.mean(steer_raw)):+.3f} "
+            f"raw_steer_std={float(np.std(steer_raw)):.3f} "
+            f"raw_steer_min={float(np.min(steer_raw)):+.3f} "
+            f"raw_steer_max={float(np.max(steer_raw)):+.3f} "
+            f"clipped_steer_mean={float(np.mean(steer_clipped)):+.3f} "
+            f"clipped_steer_min={float(np.min(steer_clipped)):+.3f} "
+            f"clipped_steer_max={float(np.max(steer_clipped)):+.3f} "
+            f"clip_ratio={steer_clip_ratio:.3f} ",
+            flush=True,
+        )
+        accel_raw = raw[:, accel_index]
+        accel_clipped = clipped[:, accel_index]
+        accel_clip_ratio = float(np.mean(np.abs(accel_raw - accel_clipped) > 1e-6))
+        print(
+            f"raw_accel_brake_mean={float(np.mean(accel_raw)):+.3f} "
+            f"raw_accel_brake_std={float(np.std(accel_raw)):.3f} "
+            f"clipped_accel_brake_mean={float(np.mean(accel_clipped)):+.3f} "
+            f"accel_brake_clip_ratio={accel_clip_ratio:.3f}",
+            flush=True,
+        )
+
+
+class TrainingBeVViewerCallback(BaseCallback if BaseCallback is not None else object):
+    def __init__(self, env: GymMoraiEnv, scale: int = 6, fps: int = 15) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        if pygame is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError(
+                "pygame is required for the training BeV viewer. Install it with `pip install pygame`."
+            ) from _PYGAME_IMPORT_ERROR
+        super().__init__()
+        self.env_ref = env
+        self.scale = max(1, int(scale))
+        self.fps = max(1, int(fps))
+        self._screen = None
+        self._font = None
+        self._small_font = None
+        self._last_draw_time = 0.0
+        self._closed = False
+
+    def _on_training_start(self) -> None:
+        snapshot = self.env_ref.get_latest_viewer_snapshot()
+        bev = snapshot["bev"]
+        channel_names = snapshot["channel_names"]
+        if bev is None or not channel_names:
+            print("BeV viewer disabled: latest observation is not BeV/hybrid.", flush=True)
+            self._closed = True
+            return
+        pygame.init()
+        pygame.font.init()
+        height_px, width_px = int(bev.shape[1]), int(bev.shape[2])
+        window_width = width_px * self.scale
+        window_height = height_px * self.scale + 84
+        self._screen = pygame.display.set_mode((window_width, window_height))
+        pygame.display.set_caption("MORAI PPO Training BeV Viewer")
+        self._font = pygame.font.SysFont("Consolas", 18)
+        self._small_font = pygame.font.SysFont("Consolas", 14)
+
+    def _on_step(self) -> bool:
+        if self._closed:
+            return True
+        assert self._screen is not None
+        assert self._font is not None
+        assert self._small_font is not None
+        now = time.monotonic()
+        if now - self._last_draw_time < 1.0 / float(self.fps):
+            return True
+        self._last_draw_time = now
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self._closed = True
+                pygame.quit()
+                return True
+        snapshot = self.env_ref.get_latest_viewer_snapshot()
+        bev = snapshot["bev"]
+        channel_names = snapshot["channel_names"]
+        info = snapshot["info"]
+        if bev is None or not channel_names:
+            return True
+        rgb = np.zeros((bev.shape[1], bev.shape[2], 3), dtype=np.uint8)
+        for channel_index, channel_name in enumerate(channel_names):
+            mask = bev[channel_index] > 0
+            if not np.any(mask):
+                continue
+            color = CHANNEL_COLORS.get(channel_name, np.array([200, 200, 200], dtype=np.uint8))
+            rgb[mask] = np.maximum(rgb[mask], color)
+        upscaled = np.kron(rgb, np.ones((self.scale, self.scale, 1), dtype=np.uint8))
+        surface = pygame.surfarray.make_surface(np.transpose(upscaled, (1, 0, 2)))
+        self._screen.fill((18, 18, 18))
+        self._screen.blit(surface, (0, 0))
+        state = info.get("state") or {}
+        reason = info.get("termination_reason")
+        progress_m = info.get("episode_progress_m", 0.0)
+        step_count = info.get("step_count", 0)
+        line_1 = (
+            f"step={step_count} progress={float(progress_m):+.2f}m "
+            f"speed={float(state.get('speed_mps', 0.0)):.2f} m/s "
+            f"throttle={float(state.get('throttle', 0.0)):.2f} "
+            f"brake={float(state.get('brake', 0.0)):.2f}"
+        )
+        line_2 = f"scenario={info.get('scenario_name')} reason={reason} mode={self.env_ref.observation_mode}"
+        line_3 = "overlay: corridor/boundary/reference/ego   close window to hide viewer"
+        y0 = bev.shape[1] * self.scale
+        self._screen.blit(self._font.render(line_1, True, (240, 240, 240)), (12, y0 + 10))
+        self._screen.blit(self._small_font.render(line_2, True, (190, 190, 190)), (12, y0 + 38))
+        self._screen.blit(self._small_font.render(line_3, True, (160, 160, 160)), (12, y0 + 60))
+        pygame.display.flip()
+        return True
+
+    def _on_training_end(self) -> None:
+        if not self._closed and pygame is not None:
+            pygame.quit()
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train a PPO policy on the MORAI RL environment.")
+    parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH))
+    parser.add_argument("--timesteps", type=int, default=50_000)
+    parser.add_argument("--save-dir", default="runs/ppo_morai")
+    parser.add_argument("--run-name", default="default")
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
+    parser.add_argument("--n-steps", type=int, default=512)
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--device", default="auto")
+    parser.add_argument("--policy", default="auto")
+    parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
+    parser.add_argument("--std-init", type=float, default=0.1)
+    parser.add_argument("--log-std-init", type=float, default=None)
+    parser.add_argument("--set-log-std", type=float, default=None)
+    parser.add_argument("--set-accel-brake-mean", type=float, default=None)
+    parser.add_argument("--set-accel-brake-std", type=float, default=None)
+    parser.add_argument("--set-steering-std", type=float, default=None)
+    parser.add_argument("--action-log-freq", type=int, default=0)
+    parser.add_argument("--initial-step-log-count", type=int, default=0)
+    parser.add_argument("--sb3-verbose", type=int, default=0)
+    parser.add_argument("--checkpoint-freq", type=int, default=5_000)
+    parser.add_argument("--progress-bar", action="store_true")
+    parser.add_argument("--show-bev", action="store_true")
+    parser.add_argument("--bev-scale", type=int, default=6)
+    parser.add_argument("--bev-fps", type=int, default=15)
+    parser.add_argument("--resume-from", default="")
+    parser.add_argument("--max-restarts", type=int, default=100)
+    parser.add_argument("--restart-wait-sec", type=float, default=2.0)
+    parser.add_argument("--runtime-recovery", action="store_true")
+    parser.add_argument("--disable-runtime-recovery", action="store_true")
+    parser.add_argument("--simulator-process-name", action="append", default=[])
+    parser.add_argument("--simulator-terminate-timeout-sec", type=float, default=None)
+    parser.add_argument("--simulator-relaunch-command", default="")
+    parser.add_argument("--simulator-relaunch-wait-sec", type=float, default=None)
+    return parser.parse_args()
+
+
+def _resolve_resume_path(resume_from: str) -> Path:
+    resume_path = Path(resume_from)
+    if resume_path.is_file():
+        return resume_path
+    if resume_path.suffix != ".zip" and resume_path.with_suffix(".zip").is_file():
+        return resume_path.with_suffix(".zip")
+    raise FileNotFoundError(f"resume model not found: {resume_from}")
+
+
+def _resolve_policy_name(args: argparse.Namespace, env) -> str:
+    if args.policy != "auto":
+        return args.policy
+    if gym is not None and isinstance(env.observation_space, gym.spaces.Dict):
+        return "MultiInputPolicy"
+    if len(getattr(env.observation_space, "shape", ())) == 3:
+        return "CnnPolicy"
+    return "MlpPolicy"
+
+
+def _should_use_roach(args: argparse.Namespace, env, policy_name: str) -> bool:
+    if args.features_extractor == "roach":
+        return True
+    if args.features_extractor == "default":
+        return False
+    return policy_name == "MultiInputPolicy" and isinstance(env.observation_space, gym.spaces.Dict)
+
+
+def _build_policy_kwargs(args: argparse.Namespace, env, policy_name: str) -> dict:
+    policy_kwargs = {}
+    if _should_use_roach(args, env, policy_name):
+        policy_kwargs["features_extractor_class"] = RoachCombinedExtractor
+    log_std_init = args.log_std_init
+    if log_std_init is None and args.std_init is not None and args.std_init > 0.0:
+        log_std_init = math.log(float(args.std_init))
+    if log_std_init is not None:
+        policy_kwargs["log_std_init"] = float(log_std_init)
+    return policy_kwargs
+
+
+def _build_model(args: argparse.Namespace, env, save_dir: Path):
+    policy_name = _resolve_policy_name(args, env)
+    print(f"policy={policy_name}", flush=True)
+    policy_kwargs = _build_policy_kwargs(args, env, policy_name)
+    if "features_extractor_class" in policy_kwargs:
+        print("features_extractor=roach", flush=True)
+    else:
+        print("features_extractor=default", flush=True)
+    if "log_std_init" in policy_kwargs:
+        log_std_init = float(policy_kwargs["log_std_init"])
+        print(f"log_std_init={log_std_init:+.4f} std_init={math.exp(log_std_init):.4f}", flush=True)
+
+    if args.resume_from:
+        resume_path = _resolve_resume_path(args.resume_from)
+        print(f"resuming_from={resume_path}", flush=True)
+        if policy_kwargs:
+            print("policy_kwargs ignored when resuming from a saved model", flush=True)
+        model = PPO.load(str(resume_path), env=env, device=args.device)
+        model.verbose = args.sb3_verbose
+        model.tensorboard_log = str(save_dir / "tb")
+        return model
+
+    return PPO(
+        policy=policy_name,
+        env=env,
+        learning_rate=args.learning_rate,
+        n_steps=args.n_steps,
+        batch_size=args.batch_size,
+        gamma=args.gamma,
+        verbose=args.sb3_verbose,
+        tensorboard_log=str(save_dir / "tb"),
+        device=args.device,
+        policy_kwargs=policy_kwargs,
+    )
+
+
+def _remaining_timesteps(target_timesteps: int, completed_timesteps: int) -> int:
+    return max(0, int(target_timesteps) - max(0, int(completed_timesteps)))
+
+
+def _action_net_row(model, index: int):
+    policy = model.policy
+    action_net = getattr(policy, "action_net", None)
+    if action_net is None or not hasattr(action_net, "weight") or not hasattr(action_net, "bias"):
+        raise RuntimeError("policy does not expose an action_net with weight/bias")
+    if index < 0 or index >= int(action_net.bias.shape[0]):
+        raise IndexError(f"action index {index} out of range for action dim {int(action_net.bias.shape[0])}")
+    return action_net, index
+
+
+def _set_accel_brake_mean(model, mean: float) -> None:
+    if th is None:
+        return
+    action_net, index = _action_net_row(model, 0)
+    with th.no_grad():
+        before_bias = float(action_net.bias[index].detach().cpu().item())
+        before_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
+        action_net.weight[index].zero_()
+        action_net.bias[index].fill_(float(mean))
+        after_bias = float(action_net.bias[index].detach().cpu().item())
+        after_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
+    print(
+        "set_accel_brake_mean "
+        f"before_bias={before_bias:+.3f} before_weight_norm={before_weight_norm:.3f} "
+        f"after_bias={after_bias:+.3f} after_weight_norm={after_weight_norm:.3f}",
+        flush=True,
+    )
+
+
+def _set_action_std(model, index: int, std: float, label: str) -> None:
+    if th is None:
+        return
+    if std <= 0.0:
+        raise ValueError(f"{label} std must be positive")
+    log_std = getattr(model.policy, "log_std", None)
+    if log_std is None:
+        raise RuntimeError("policy does not expose log_std")
+    if index < 0 or index >= int(log_std.shape[-1]):
+        raise IndexError(f"action index {index} out of range for log_std shape {tuple(log_std.shape)}")
+    with th.no_grad():
+        before_log_std = float(log_std[index].detach().cpu().item())
+        before_std = math.exp(before_log_std)
+        log_std[index].fill_(math.log(float(std)))
+        after_log_std = float(log_std[index].detach().cpu().item())
+        after_std = math.exp(after_log_std)
+    print(
+        f"set_{label}_std index={index} "
+        f"before_log_std={before_log_std:+.3f} before_std={before_std:.3f} "
+        f"after_log_std={after_log_std:+.3f} after_std={after_std:.3f}",
+        flush=True,
+    )
+
+
+def _set_log_std(model, log_std_value: float) -> None:
+    if th is None:
+        return
+    log_std = getattr(model.policy, "log_std", None)
+    if log_std is None:
+        raise RuntimeError("policy does not expose log_std")
+    with th.no_grad():
+        before_mean = float(log_std.detach().cpu().mean().item())
+        before_std_mean = math.exp(before_mean)
+        log_std.fill_(float(log_std_value))
+        after_mean = float(log_std.detach().cpu().mean().item())
+        after_std_mean = math.exp(after_mean)
+    print(
+        "set_log_std "
+        f"before_mean={before_mean:+.3f} before_std_mean={before_std_mean:.3f} "
+        f"after_mean={after_mean:+.3f} after_std_mean={after_std_mean:.3f}",
+        flush=True,
+    )
+
+
+def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
+    if args.set_log_std is not None:
+        _set_log_std(model, float(args.set_log_std))
+    if args.set_accel_brake_mean is not None:
+        _set_accel_brake_mean(model, float(args.set_accel_brake_mean))
+    if args.set_accel_brake_std is not None:
+        _set_action_std(model, 0, float(args.set_accel_brake_std), "accel_brake")
+    if args.set_steering_std is not None:
+        _set_action_std(model, 1, float(args.set_steering_std), "steering")
+
+
+def _runtime_recovery_options(args: argparse.Namespace) -> dict:
+    config = load_config(args.config).recovery
+    enabled = bool(config.enabled)
+    if args.runtime_recovery:
+        enabled = True
+    if args.disable_runtime_recovery:
+        enabled = False
+    process_names = list(args.simulator_process_name or config.simulator_process_names)
+    terminate_timeout_sec = (
+        float(config.terminate_timeout_sec)
+        if args.simulator_terminate_timeout_sec is None
+        else float(args.simulator_terminate_timeout_sec)
+    )
+    relaunch_command = args.simulator_relaunch_command or config.relaunch_command
+    relaunch_wait_sec = (
+        float(config.relaunch_wait_sec)
+        if args.simulator_relaunch_wait_sec is None
+        else float(args.simulator_relaunch_wait_sec)
+    )
+    return {
+        "enabled": enabled,
+        "process_names": process_names,
+        "terminate_timeout_sec": terminate_timeout_sec,
+        "relaunch_command": relaunch_command,
+        "relaunch_wait_sec": relaunch_wait_sec,
+    }
+
+
+def _recover_runtime_after_crash(options: dict) -> None:
+    if not options.get("enabled", False):
+        return
+    process_names = [str(name).strip() for name in options.get("process_names", []) if str(name).strip()]
+    terminate_timeout_sec = float(options.get("terminate_timeout_sec", 5.0))
+    relaunch_command = str(options.get("relaunch_command", "")).strip()
+    relaunch_wait_sec = max(0.0, float(options.get("relaunch_wait_sec", 0.0)))
+    print(
+        "runtime_recovery start "
+        f"process_names={process_names} "
+        f"relaunch_command={relaunch_command!r}",
+        flush=True,
+    )
+    killed_pids = terminate_processes_by_name(process_names, terminate_timeout_sec)
+    print(f"runtime_recovery killed_pids={killed_pids}", flush=True)
+    launched_pid = launch_process(relaunch_command) if relaunch_command else None
+    print(f"runtime_recovery launched_pid={launched_pid}", flush=True)
+    if relaunch_wait_sec > 0.0:
+        print(f"runtime_recovery waiting {relaunch_wait_sec:.1f}s", flush=True)
+        time.sleep(relaunch_wait_sec)
+
+
+def _close_env_quietly(env) -> None:
+    try:
+        env.close()
+    except Exception as exc:
+        print(f"env_close_failed_during_restart error={exc}", flush=True)
+
+
+def main() -> None:
+    if PPO is None or Monitor is None or CheckpointCallback is None or CallbackList is None:
+        raise ModuleNotFoundError(
+            "stable-baselines3 and torch are required. Install them with "
+            "`pip install stable-baselines3 gymnasium torch`."
+        ) from _SB3_IMPORT_ERROR
+
+    args = parse_args()
+    save_dir = Path(args.save_dir) / args.run_name
+    save_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir = save_dir / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    recovery_options = _runtime_recovery_options(args)
+    if recovery_options["enabled"]:
+        print(
+            "runtime_recovery enabled "
+            f"process_names={recovery_options['process_names']} "
+            f"relaunch_command={recovery_options['relaunch_command']!r}",
+            flush=True,
+        )
+    base_env = GymMoraiEnv(args.config)
+    env = Monitor(base_env)
+    model = _build_model(args, env, save_dir)
+    _apply_policy_overrides(model, args)
+    restart_count = 0
+    current_resume_from = args.resume_from
+    reset_num_timesteps = not bool(current_resume_from)
+
+    while True:
+        remaining_timesteps = _remaining_timesteps(args.timesteps, model.num_timesteps)
+        if remaining_timesteps <= 0:
+            print(
+                "target_timesteps_already_reached "
+                f"target={args.timesteps} completed={model.num_timesteps}",
+                flush=True,
+            )
+            model.save(str(save_dir / "ppo_model"))
+            print(f"saved_model={save_dir / 'ppo_model'}", flush=True)
+            break
+
+        checkpoint_callback = CheckpointCallback(
+            save_freq=max(1, args.checkpoint_freq),
+            save_path=str(checkpoint_dir),
+            name_prefix="ppo_checkpoint",
+        )
+        episode_stats_callback = EpisodeResetStatsCallback(
+            initial_step_log_count=args.initial_step_log_count,
+        )
+        callbacks = [checkpoint_callback, episode_stats_callback]
+        if args.action_log_freq > 0:
+            callbacks.append(ActionStatsCallback(log_freq=args.action_log_freq))
+        if args.show_bev:
+            callbacks.append(TrainingBeVViewerCallback(env=base_env, scale=args.bev_scale, fps=args.bev_fps))
+        callback = CallbackList(callbacks)
+        try:
+            print(
+                "training_budget "
+                f"target={args.timesteps} completed={model.num_timesteps} "
+                f"remaining={remaining_timesteps}",
+                flush=True,
+            )
+            model.learn(
+                total_timesteps=remaining_timesteps,
+                callback=callback,
+                progress_bar=args.progress_bar,
+                reset_num_timesteps=reset_num_timesteps,
+            )
+            model.save(str(save_dir / "ppo_model"))
+            print(f"saved_model={save_dir / 'ppo_model'}", flush=True)
+            break
+        except KeyboardInterrupt:
+            model.save(str(save_dir / "ppo_model_interrupted"))
+            print(f"saved_model={save_dir / 'ppo_model_interrupted'}", flush=True)
+            raise
+        except Exception as exc:
+            model.save(str(save_dir / "ppo_model_crash"))
+            print(f"saved_model={save_dir / 'ppo_model_crash'}", flush=True)
+            restart_count += 1
+            if restart_count > args.max_restarts:
+                raise RuntimeError(f"training aborted after {restart_count} restarts") from exc
+            completed_timesteps = model.num_timesteps
+            remaining_timesteps = _remaining_timesteps(args.timesteps, completed_timesteps)
+            print(
+                "training crashed, restarting from latest crash model "
+                f"({restart_count}/{args.max_restarts}, "
+                f"num_timesteps={completed_timesteps}, "
+                f"remaining_timesteps={remaining_timesteps}, error={exc})",
+                flush=True,
+            )
+            _close_env_quietly(env)
+            if recovery_options["enabled"]:
+                _recover_runtime_after_crash(recovery_options)
+            elif args.restart_wait_sec > 0.0:
+                time.sleep(args.restart_wait_sec)
+            current_resume_from = str(save_dir / "ppo_model_crash.zip")
+            args.resume_from = current_resume_from
+            base_env = GymMoraiEnv(args.config)
+            env = Monitor(base_env)
+            model = _build_model(args, env, save_dir)
+            _apply_policy_overrides(model, args)
+            reset_num_timesteps = False
+
+    _close_env_quietly(env)
+
+
+if __name__ == "__main__":
+    main()

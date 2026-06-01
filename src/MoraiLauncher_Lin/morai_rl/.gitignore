@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# Training/runtime outputs
+runs/
+logs/
+*.pt
+*.pth
+*.zip
+*.log
+*.tmp
+
+# Local/editor files
+.vscode/
+.idea/
+.DS_Store
