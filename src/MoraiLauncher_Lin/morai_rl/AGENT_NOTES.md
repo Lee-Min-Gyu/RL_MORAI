@@ -165,3 +165,8 @@ Validation already performed after cleanup:
 - `core/simulator_process.py` can find and terminate host simulator processes by name if the container is launched with host PID visibility, e.g. Docker `--pid=host`.
 - `scripts/demo_runtime_recovery.py` is a small demo loop that can intentionally kill `Simulator.x86_64` and observe reset behavior.
 - Full automatic simulator relaunch during training is still planned. Desired behavior: on simulator-unresponsive `RuntimeError`, kill `Simulator.x86_64`, then restart with something like `roslaunch msc_ros msc_ros.launch`.
+
+## Next Planned Work
+
+1. Add robust training-time simulator recovery: when MORAI stops responding and training raises `RuntimeError`, save the current model, force-kill `Simulator.x86_64`, restart MORAI/ROS launch with the appropriate `roslaunch msc_ros ...` command, wait for sync services to return, then resume from the latest saved model.
+2. After simulator relaunch is stable, investigate distributed/parallel training. This is only a future direction for now; do not start this before recovery is reliable.
