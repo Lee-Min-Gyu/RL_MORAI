@@ -13,8 +13,13 @@ workspace_src_path = os.path.abspath(os.path.join(morai_pkg_path, '..'))
 if workspace_src_path not in sys.path:
     sys.path.insert(0, workspace_src_path)
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../ros_drive/morai_standard/scripts"))
-print(os.path.join(os.path.dirname(__file__), "../../ros_drive/morai_standard/scripts"))
+morai_scripts_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../ros_drive/morai_standard/scripts")
+)
+if morai_scripts_path in sys.path:
+    sys.path.remove(morai_scripts_path)
+sys.path.insert(0, morai_scripts_path)
+print(morai_scripts_path)
 from morai_standard.scripts.main import main as ros_main
 """
 https://docs.google.com/spreadsheets/d/1jHbR_JoZFYfxMirwSp-48peWkJf1xUmMZyFIwetxcZM/edit#gid=0

@@ -84,6 +84,7 @@ python -m morai_rl.scripts.train_ppo \
 - startup readiness에서 `can_send_tick` 강제 대기는 제거했습니다.
 - `network_file`은 경로가 아니라 MORAI SaveFile 내부 네트워크 파일 이름만 적어야 함을 문서화했습니다.
 - 불필요한 `velocity_profile` debug 출력은 제거했습니다.
+- GitHub clone 시 누락되던 `autonomous_driving/mgeo/lib`를 submodule 대신 일반 파일로 포함하도록 정리했습니다.
 
 ## Notes
 

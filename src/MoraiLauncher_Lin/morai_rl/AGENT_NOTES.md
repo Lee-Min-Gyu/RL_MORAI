@@ -16,6 +16,7 @@ Read this section first. It reflects the work completed in the most recent debug
 - A hard recovery-level wait on `/SyncModeInfo.can_send_tick` was tried and removed. Do not re-add it as a startup gate; it fired too early before sync/scenario readiness and broke recovery.
 - The public README was updated with setup commands, `msc_ros.launch`, `network_file`, diagnostics, training, recovery, and injected test usage.
 - `params.txt` contains sensitive launcher account fields; do not copy credentials into README or commits.
+- `src/MSC/ros_drive/morai_standard/scripts/autonomous_driving/mgeo/lib` is now vendored as normal files. It had a broken nested submodule pointer, which caused GitHub clones to miss `autonomous_driving.mgeo.lib`.
 
 Important recent code changes:
 
@@ -40,6 +41,10 @@ Important recent code changes:
   - `_can_send_tick` is still stored from `/SyncModeInfo`, but not used as a recovery readiness gate
 - `ros_drive/.../path_manager.py`
   - removed noisy `velocity_profile` debug print
+- `ros_drive/morai_standard/scripts/autonomous_driving/mgeo/lib`
+  - removed nested MGeo submodule pointer
+  - added MGeo source/data files as regular tracked files
+  - added a `.gitignore` exception so this path is not hidden by the generic `lib/` ignore rule
 
 Why relaunch was previously failing:
 

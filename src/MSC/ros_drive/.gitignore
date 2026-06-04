@@ -20,6 +20,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!morai_standard/scripts/autonomous_driving/mgeo/lib/
+!morai_standard/scripts/autonomous_driving/mgeo/lib/**
 lib64/
 parts/
 sdist/
