@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import math
 from pathlib import Path
+import subprocess
 import time
 
 import numpy as np
@@ -34,7 +35,11 @@ else:
     _PYGAME_IMPORT_ERROR = None
 
 from morai_rl.config.runtime import load_config
-from morai_rl.core.simulator_process import launch_process, terminate_processes_by_name
+from morai_rl.core.simulator_process import (
+    launch_process,
+    terminate_processes_by_cmdline_substrings,
+    terminate_processes_by_name,
+)
 from morai_rl.envs.gym_wrapper import GymMoraiEnv
 from morai_rl.policies.roach_extractor import RoachCombinedExtractor
 
@@ -227,6 +232,22 @@ class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
         )
 
 
+class InjectRuntimeErrorCallback(BaseCallback if BaseCallback is not None else object):
+    def __init__(self, trigger_timestep: int) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        super().__init__()
+        self.trigger_timestep = int(trigger_timestep)
+
+    def _on_step(self) -> bool:
+        if self.num_timesteps >= self.trigger_timestep:
+            raise RuntimeError(
+                "injected runtime recovery test "
+                f"at total_timesteps={self.num_timesteps}"
+            )
+        return True
+
+
 class TrainingBeVViewerCallback(BaseCallback if BaseCallback is not None else object):
     def __init__(self, env: GymMoraiEnv, scale: int = 6, fps: int = 15) -> None:
         if BaseCallback is None:  # pragma: no cover - runtime guard
@@ -355,6 +376,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--simulator-terminate-timeout-sec", type=float, default=None)
     parser.add_argument("--simulator-relaunch-command", default="")
     parser.add_argument("--simulator-relaunch-wait-sec", type=float, default=None)
+    parser.add_argument(
+        "--inject-runtime-error-after-steps",
+        type=int,
+        default=0,
+        help="Testing only: raise one RuntimeError at this absolute total timestep.",
+    )
     return parser.parse_args()
 
 
@@ -522,13 +549,15 @@ def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
 
 
 def _runtime_recovery_options(args: argparse.Namespace) -> dict:
-    config = load_config(args.config).recovery
+    app_config = load_config(args.config)
+    config = app_config.recovery
     enabled = bool(config.enabled)
     if args.runtime_recovery:
         enabled = True
     if args.disable_runtime_recovery:
         enabled = False
     process_names = list(args.simulator_process_name or config.simulator_process_names)
+    cleanup_cmdline_substrings = list(config.relaunch_cleanup_cmdline_substrings)
     terminate_timeout_sec = (
         float(config.terminate_timeout_sec)
         if args.simulator_terminate_timeout_sec is None
@@ -540,12 +569,25 @@ def _runtime_recovery_options(args: argparse.Namespace) -> dict:
         if args.simulator_relaunch_wait_sec is None
         else float(args.simulator_relaunch_wait_sec)
     )
+    required_services = [
+        app_config.ros.sync_mode_cmd_service,
+        app_config.ros.sync_ctrl_cmd_service,
+        app_config.ros.wait_for_tick_service,
+        app_config.ros.sync_set_gear_service,
+        app_config.ros.sync_scenario_load_service,
+    ]
     return {
         "enabled": enabled,
         "process_names": process_names,
+        "cleanup_cmdline_substrings": cleanup_cmdline_substrings,
         "terminate_timeout_sec": terminate_timeout_sec,
         "relaunch_command": relaunch_command,
         "relaunch_wait_sec": relaunch_wait_sec,
+        "wait_for_services": bool(config.wait_for_services),
+        "wait_services_timeout_sec": float(config.wait_services_timeout_sec),
+        "wait_services_poll_sec": float(config.wait_services_poll_sec),
+        "post_services_wait_sec": float(config.post_services_wait_sec),
+        "required_services": required_services,
     }
 
 
@@ -553,22 +595,77 @@ def _recover_runtime_after_crash(options: dict) -> None:
     if not options.get("enabled", False):
         return
     process_names = [str(name).strip() for name in options.get("process_names", []) if str(name).strip()]
+    cleanup_cmdline_substrings = [
+        str(pattern).strip()
+        for pattern in options.get("cleanup_cmdline_substrings", [])
+        if str(pattern).strip()
+    ]
     terminate_timeout_sec = float(options.get("terminate_timeout_sec", 5.0))
     relaunch_command = str(options.get("relaunch_command", "")).strip()
     relaunch_wait_sec = max(0.0, float(options.get("relaunch_wait_sec", 0.0)))
     print(
         "runtime_recovery start "
         f"process_names={process_names} "
+        f"cleanup_cmdline_substrings={cleanup_cmdline_substrings} "
         f"relaunch_command={relaunch_command!r}",
         flush=True,
     )
     killed_pids = terminate_processes_by_name(process_names, terminate_timeout_sec)
     print(f"runtime_recovery killed_pids={killed_pids}", flush=True)
+    cleanup_pids = terminate_processes_by_cmdline_substrings(
+        cleanup_cmdline_substrings,
+        terminate_timeout_sec,
+    )
+    print(f"runtime_recovery cleanup_pids={cleanup_pids}", flush=True)
     launched_pid = launch_process(relaunch_command) if relaunch_command else None
     print(f"runtime_recovery launched_pid={launched_pid}", flush=True)
     if relaunch_wait_sec > 0.0:
         print(f"runtime_recovery waiting {relaunch_wait_sec:.1f}s", flush=True)
         time.sleep(relaunch_wait_sec)
+    if options.get("wait_for_services", True):
+        _wait_for_ros_services(
+            [str(service) for service in options.get("required_services", [])],
+            timeout_sec=float(options.get("wait_services_timeout_sec", 90.0)),
+            poll_sec=float(options.get("wait_services_poll_sec", 2.0)),
+        )
+    post_services_wait_sec = max(0.0, float(options.get("post_services_wait_sec", 0.0)))
+    if post_services_wait_sec > 0.0:
+        print(f"runtime_recovery post_services_wait {post_services_wait_sec:.1f}s", flush=True)
+        time.sleep(post_services_wait_sec)
+
+
+def _wait_for_ros_services(required_services: list[str], timeout_sec: float, poll_sec: float) -> None:
+    required = {service.strip() for service in required_services if service.strip()}
+    if not required:
+        return
+    deadline = time.monotonic() + max(0.0, timeout_sec)
+    last_missing = sorted(required)
+    while time.monotonic() <= deadline:
+        try:
+            result = subprocess.run(
+                ["rosservice", "list"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=max(1.0, min(10.0, poll_sec)),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            last_missing = sorted(required)
+            print(f"runtime_recovery rosservice_list_failed error={exc}", flush=True)
+        else:
+            services = {line.strip() for line in result.stdout.splitlines() if line.strip()}
+            missing = sorted(required - services)
+            if not missing:
+                print(
+                    "runtime_recovery services_ready "
+                    f"services={sorted(required)}",
+                    flush=True,
+                )
+                return
+            last_missing = missing
+            print(f"runtime_recovery waiting_for_services missing={missing}", flush=True)
+        time.sleep(max(0.1, poll_sec))
+    raise RuntimeError(f"runtime recovery timed out waiting for ROS services: {last_missing}")
 
 
 def _close_env_quietly(env) -> None:
@@ -605,6 +702,7 @@ def main() -> None:
     restart_count = 0
     current_resume_from = args.resume_from
     reset_num_timesteps = not bool(current_resume_from)
+    injected_runtime_error = False
 
     while True:
         remaining_timesteps = _remaining_timesteps(args.timesteps, model.num_timesteps)
@@ -631,6 +729,12 @@ def main() -> None:
             callbacks.append(ActionStatsCallback(log_freq=args.action_log_freq))
         if args.show_bev:
             callbacks.append(TrainingBeVViewerCallback(env=base_env, scale=args.bev_scale, fps=args.bev_fps))
+        if (
+            args.inject_runtime_error_after_steps > 0
+            and not injected_runtime_error
+            and model.num_timesteps < args.inject_runtime_error_after_steps <= args.timesteps
+        ):
+            callbacks.append(InjectRuntimeErrorCallback(args.inject_runtime_error_after_steps))
         callback = CallbackList(callbacks)
         try:
             print(
@@ -652,7 +756,9 @@ def main() -> None:
             model.save(str(save_dir / "ppo_model_interrupted"))
             print(f"saved_model={save_dir / 'ppo_model_interrupted'}", flush=True)
             raise
-        except Exception as exc:
+        except RuntimeError as exc:
+            if str(exc).startswith("injected runtime recovery test"):
+                injected_runtime_error = True
             model.save(str(save_dir / "ppo_model_crash"))
             print(f"saved_model={save_dir / 'ppo_model_crash'}", flush=True)
             restart_count += 1
@@ -679,6 +785,10 @@ def main() -> None:
             model = _build_model(args, env, save_dir)
             _apply_policy_overrides(model, args)
             reset_num_timesteps = False
+        except Exception:
+            model.save(str(save_dir / "ppo_model_crash"))
+            print(f"saved_model={save_dir / 'ppo_model_crash'}", flush=True)
+            raise
 
     _close_env_quietly(env)
 

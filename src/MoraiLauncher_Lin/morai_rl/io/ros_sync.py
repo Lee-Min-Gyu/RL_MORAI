@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import queue
 import threading
 import time
 from typing import Any
@@ -62,6 +63,37 @@ def ensure_ros_node(node_name: str, anonymous: bool = True) -> None:
     if rospy.core.is_initialized():
         return
     rospy.init_node(node_name, anonymous=anonymous, disable_signals=True)
+
+
+def _call_ros_service_with_timeout(
+    proxy: Any,
+    request: Any,
+    timeout_sec: float,
+    service_name: str,
+) -> Any:
+    timeout_sec = float(timeout_sec)
+    if timeout_sec <= 0.0:
+        return proxy(request)
+
+    result_queue: queue.Queue[tuple[str, Any]] = queue.Queue(maxsize=1)
+
+    def call_service() -> None:
+        try:
+            result_queue.put(("result", proxy(request)))
+        except BaseException as exc:
+            result_queue.put(("error", exc))
+
+    thread = threading.Thread(target=call_service, daemon=True)
+    thread.start()
+    try:
+        kind, value = result_queue.get(timeout=timeout_sec)
+    except queue.Empty as exc:
+        raise RuntimeError(
+            f"ROS service call timed out: {service_name} after {timeout_sec:.1f}s"
+        ) from exc
+    if kind == "error":
+        raise RuntimeError(f"ROS service call failed: {service_name}: {value}") from value
+    return value
 
 
 def vehicle_state_from_msg(
@@ -448,6 +480,11 @@ class RosControlClient:
         rospy.wait_for_service(service_name, timeout=self.service_timeout_sec)
         return rospy.ServiceProxy(service_name, service_type)
 
+    def _call_service(self, proxy: Any, request: Any, service_name: str, timeout_sec: float | None = None) -> Any:
+        if timeout_sec is None:
+            timeout_sec = self.service_timeout_sec
+        return _call_ros_service_with_timeout(proxy, request, timeout_sec, service_name)
+
     def _set_sync_mode(self, enabled: bool) -> None:
         _, messages, _, _ = _import_ros()
         request = messages["SyncModeCmd"](
@@ -455,7 +492,7 @@ class RosControlClient:
             start_sync_mode=bool(enabled),
             time_step=self.time_step,
         )
-        response = self._sync_mode_proxy(request)
+        response = self._call_service(self._sync_mode_proxy, request, self.sync_mode_cmd_service)
         if not getattr(response.response, "result", False):
             if enabled and self._attach_to_existing_sync_master(timeout_sec=1.0):
                 return
@@ -487,7 +524,7 @@ class RosControlClient:
             command=ros_command,
             sensor_capture=self.sensor_capture,
         )
-        response = self._sync_ctrl_proxy(request)
+        response = self._call_service(self._sync_ctrl_proxy, request, self.sync_ctrl_cmd_service)
         if not getattr(response.response, "result", False):
             failed_frame = self.frame
             tried_frames = [failed_frame]
@@ -513,7 +550,7 @@ class RosControlClient:
                     command=ros_command,
                     sensor_capture=self.sensor_capture,
                 )
-                response = self._sync_ctrl_proxy(request)
+                response = self._call_service(self._sync_ctrl_proxy, request, self.sync_ctrl_cmd_service)
                 if getattr(response.response, "result", False):
                     break
             if not getattr(response.response, "result", False):
@@ -525,7 +562,12 @@ class RosControlClient:
             user_id=self.user_id,
             frame=self.frame,
         )
-        tick_response = self._wait_for_tick_proxy(tick_request)
+        tick_response = self._call_service(
+            self._wait_for_tick_proxy,
+            tick_request,
+            self.wait_for_tick_service,
+            self.wait_for_tick_timeout_sec,
+        )
         if not getattr(tick_response.response, "tick_status", False):
             failed_frame = self.frame
             if self._sync_frame_from_info(timeout_sec=0.5, min_frame=max(0, failed_frame - 1), step=1):
@@ -533,7 +575,12 @@ class RosControlClient:
                     user_id=self.user_id,
                     frame=self.frame,
                 )
-                tick_response = self._wait_for_tick_proxy(tick_request)
+                tick_response = self._call_service(
+                    self._wait_for_tick_proxy,
+                    tick_request,
+                    self.wait_for_tick_service,
+                    self.wait_for_tick_timeout_sec,
+                )
             if not getattr(tick_response.response, "tick_status", False):
                 raise RuntimeError(
                     f"wait for tick failed at frame {failed_frame}; retry_frame={self.frame}"
@@ -548,7 +595,7 @@ class RosControlClient:
             gear=int(gear),
             frame=self.frame,
         )
-        response = self._sync_set_gear_proxy(request)
+        response = self._call_service(self._sync_set_gear_proxy, request, self.sync_set_gear_service)
         if not getattr(response.response, "result", False):
             raise RuntimeError(f"sync set gear failed: gear={gear} frame={self.frame}")
         self._last_gear = int(gear)
@@ -560,7 +607,12 @@ class RosControlClient:
             user_id=self.user_id,
             frame=self.frame,
         )
-        tick_response = self._wait_for_tick_proxy(tick_request)
+        tick_response = self._call_service(
+            self._wait_for_tick_proxy,
+            tick_request,
+            self.wait_for_tick_service,
+            self.wait_for_tick_timeout_sec,
+        )
         if not getattr(tick_response.response, "tick_status", False):
             raise RuntimeError(f"wait for tick failed at frame {self.frame}")
         self.frame = int(getattr(tick_response.response, "frame", self.frame)) + self._frame_step
@@ -639,7 +691,12 @@ class RosSyncScenarioLoadClient:
             load_obstacle_data=self.load_object_data,
             set_pause=self.set_pause,
         )
-        response = self._proxy(request)
+        response = _call_ros_service_with_timeout(
+            self._proxy,
+            request,
+            self.service_timeout_sec,
+            self.service_name,
+        )
         if not getattr(response.response, "result", False):
             raise RuntimeError(f"sync scenario load failed: {request.file_name}")
         self._frame = frame + 1

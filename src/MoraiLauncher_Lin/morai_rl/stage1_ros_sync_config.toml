@@ -21,8 +21,8 @@ start_sync_on_start = true
 stop_sync_on_close = true
 time_step = 20
 sensor_capture = false
-service_timeout_sec = 5.0
-wait_for_tick_timeout_sec = 5.0
+service_timeout_sec = 30.0
+wait_for_tick_timeout_sec = 10.0
 
 [env]
 step_hz = 50.0
@@ -86,9 +86,9 @@ post_command_wait_sec = 5.0
 stable_speed_tolerance_mps = 0.3
 stable_position_tolerance_m = 0.5
 stable_frames_required = 1
-reset_timeout_sec = 5.0
+reset_timeout_sec = 20.0
 allow_unstable_reset = true
-max_reset_attempts = 1
+max_reset_attempts = 3
 reset_retry_wait_sec = 10.0
 
 [path]
@@ -126,8 +126,16 @@ ego_vehicle_width_m = 1.835
 ego_vehicle_offset_forward_m = 0.0
 
 [recovery]
-enabled = false
+enabled = true
 simulator_process_names = ["Simulator.x86_64"]
+relaunch_cleanup_cmdline_substrings = [
+  "roslaunch msc_ros msc_ros.launch",
+  "msc_ros/scripts/api.py",
+]
 terminate_timeout_sec = 5.0
-relaunch_command = ""
-relaunch_wait_sec = 20.0
+relaunch_command = "roslaunch msc_ros msc_ros.launch"
+relaunch_wait_sec = 60.0
+wait_for_services = true
+wait_services_timeout_sec = 300.0
+wait_services_poll_sec = 2.0
+post_services_wait_sec = 15.0

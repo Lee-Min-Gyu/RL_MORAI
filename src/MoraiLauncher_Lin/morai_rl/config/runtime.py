@@ -259,9 +259,14 @@ class BevConfig:
 class RecoveryConfig:
     enabled: bool = False
     simulator_process_names: list[str] = field(default_factory=lambda: ["Simulator.x86_64"])
+    relaunch_cleanup_cmdline_substrings: list[str] = field(default_factory=list)
     terminate_timeout_sec: float = 5.0
     relaunch_command: str = ""
     relaunch_wait_sec: float = 20.0
+    wait_for_services: bool = True
+    wait_services_timeout_sec: float = 90.0
+    wait_services_poll_sec: float = 2.0
+    post_services_wait_sec: float = 0.0
 
 
 @dataclass

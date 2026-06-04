@@ -70,8 +70,6 @@ class PathManager:
 
         self.velocity_profile = velocity_profile
 
-        print('velocity_profile',velocity_profile)
-
     def get_local_path(self, vehicle_state):
         # TODO: 최소값 구하는 로직 개선 필요.
         min_distance=float('inf')
