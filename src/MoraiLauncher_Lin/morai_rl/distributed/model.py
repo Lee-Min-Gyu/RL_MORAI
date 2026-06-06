@@ -106,6 +106,41 @@ def build_distributed_ppo(
     return model
 
 
+def load_distributed_ppo(
+    *,
+    checkpoint_path: str,
+    config_path: str,
+    n_envs: int,
+    n_steps: int,
+    batch_size: int,
+    n_epochs: int,
+    learning_rate: float,
+    gamma: float,
+    gae_lambda: float,
+    device: str,
+    verbose: int = 0,
+    tensorboard_log: str | None = None,
+):
+    if PPO is None:  # pragma: no cover - runtime guard
+        raise ModuleNotFoundError("stable-baselines3 and torch are required") from _SB3_IMPORT_ERROR
+
+    vec_env = build_space_only_vec_env(config_path, n_envs=n_envs)
+    model = PPO.load(
+        checkpoint_path,
+        env=vec_env,
+        device=device,
+        n_steps=n_steps,
+        batch_size=batch_size,
+        n_epochs=n_epochs,
+        learning_rate=learning_rate,
+        gamma=gamma,
+        gae_lambda=gae_lambda,
+        verbose=verbose,
+        tensorboard_log=tensorboard_log,
+    )
+    return model
+
+
 def dump_policy_state(model) -> tuple[bytes, str]:
     if th is None:  # pragma: no cover - runtime guard
         raise ModuleNotFoundError("torch is required") from _SB3_IMPORT_ERROR

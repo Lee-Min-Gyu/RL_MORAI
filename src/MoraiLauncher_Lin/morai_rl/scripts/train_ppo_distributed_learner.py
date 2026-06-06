@@ -2,11 +2,20 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import math
 from pathlib import Path
 import socket
 import time
 
-from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state
+try:
+    import torch as th
+except ModuleNotFoundError as exc:  # pragma: no cover - runtime guard
+    th = None
+    _TORCH_IMPORT_ERROR = exc
+else:
+    _TORCH_IMPORT_ERROR = None
+
+from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state, load_distributed_ppo
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.distributed.rollout_buffer import fill_rollout_buffer
 
@@ -33,6 +42,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
+    parser.add_argument("--set-log-std", type=float, default=None)
+    parser.add_argument("--set-accel-brake-mean", type=float, default=None)
+    parser.add_argument("--set-accel-brake-std", type=float, default=None)
+    parser.add_argument("--set-steering-std", type=float, default=None)
+    parser.add_argument("--resume-from", default="")
     parser.add_argument("--sb3-verbose", type=int, default=0)
     return parser.parse_args()
 
@@ -42,26 +56,18 @@ def main() -> None:
     save_dir = Path(args.save_dir) / args.run_name
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    model = build_distributed_ppo(
-        config_path=args.config,
-        n_envs=args.workers,
-        n_steps=args.rollout_steps,
-        batch_size=args.batch_size,
-        n_epochs=args.n_epochs,
-        learning_rate=args.learning_rate,
-        gamma=args.gamma,
-        gae_lambda=args.gae_lambda,
-        device=args.device,
-        policy=args.policy,
-        features_extractor=args.features_extractor,
-        std_init=args.std_init,
-        log_std_init=args.log_std_init,
-        verbose=args.sb3_verbose,
-        tensorboard_log=str(save_dir / "tb"),
+    model = _build_or_load_model(args, save_dir)
+    _apply_policy_overrides(model, args)
+    completed_timesteps = int(getattr(model, "num_timesteps", 0))
+    remaining_timesteps = max(0, int(args.timesteps) - max(0, completed_timesteps))
+    print(
+        "training_budget "
+        f"target={args.timesteps} completed={completed_timesteps} remaining={remaining_timesteps}",
+        flush=True,
     )
     model._setup_learn(
-        total_timesteps=args.timesteps,
-        reset_num_timesteps=True,
+        total_timesteps=remaining_timesteps,
+        reset_num_timesteps=not bool(args.resume_from),
         tb_log_name=args.run_name,
         progress_bar=False,
     )
@@ -97,6 +103,139 @@ def main() -> None:
         model.save(str(save_dir / "ppo_model_final"))
         _broadcast_shutdown(clients)
         print(f"learner_done saved_model={save_dir / 'ppo_model_final'}", flush=True)
+
+
+def _resolve_resume_path(resume_from: str) -> Path:
+    resume_path = Path(resume_from)
+    if resume_path.is_file():
+        return resume_path
+    if resume_path.suffix != ".zip" and resume_path.with_suffix(".zip").is_file():
+        return resume_path.with_suffix(".zip")
+    raise FileNotFoundError(f"resume model not found: {resume_from}")
+
+
+def _build_or_load_model(args: argparse.Namespace, save_dir: Path):
+    if args.resume_from:
+        resume_path = _resolve_resume_path(args.resume_from)
+        print(f"resuming_from={resume_path}", flush=True)
+        if args.log_std_init is not None or args.std_init is not None:
+            print("std-init/log-std-init ignored when resuming from a saved model", flush=True)
+        return load_distributed_ppo(
+            checkpoint_path=str(resume_path),
+            config_path=args.config,
+            n_envs=args.workers,
+            n_steps=args.rollout_steps,
+            batch_size=args.batch_size,
+            n_epochs=args.n_epochs,
+            learning_rate=args.learning_rate,
+            gamma=args.gamma,
+            gae_lambda=args.gae_lambda,
+            device=args.device,
+            verbose=args.sb3_verbose,
+            tensorboard_log=str(save_dir / "tb"),
+        )
+
+    return build_distributed_ppo(
+        config_path=args.config,
+        n_envs=args.workers,
+        n_steps=args.rollout_steps,
+        batch_size=args.batch_size,
+        n_epochs=args.n_epochs,
+        learning_rate=args.learning_rate,
+        gamma=args.gamma,
+        gae_lambda=args.gae_lambda,
+        device=args.device,
+        policy=args.policy,
+        features_extractor=args.features_extractor,
+        std_init=args.std_init,
+        log_std_init=args.log_std_init,
+        verbose=args.sb3_verbose,
+        tensorboard_log=str(save_dir / "tb"),
+    )
+
+
+def _action_net_row(model, index: int):
+    policy = model.policy
+    action_net = getattr(policy, "action_net", None)
+    if action_net is None or not hasattr(action_net, "weight") or not hasattr(action_net, "bias"):
+        raise RuntimeError("policy does not expose an action_net with weight/bias")
+    if index < 0 or index >= int(action_net.bias.shape[0]):
+        raise IndexError(f"action index {index} out of range for action dim {int(action_net.bias.shape[0])}")
+    return action_net, index
+
+
+def _set_accel_brake_mean(model, mean: float) -> None:
+    if th is None:
+        raise ModuleNotFoundError("torch is required") from _TORCH_IMPORT_ERROR
+    action_net, index = _action_net_row(model, 0)
+    with th.no_grad():
+        before_bias = float(action_net.bias[index].detach().cpu().item())
+        before_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
+        action_net.weight[index].zero_()
+        action_net.bias[index].fill_(float(mean))
+        after_bias = float(action_net.bias[index].detach().cpu().item())
+        after_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
+    print(
+        "set_accel_brake_mean "
+        f"before_bias={before_bias:+.3f} before_weight_norm={before_weight_norm:.3f} "
+        f"after_bias={after_bias:+.3f} after_weight_norm={after_weight_norm:.3f}",
+        flush=True,
+    )
+
+
+def _set_action_std(model, index: int, std: float, label: str) -> None:
+    if th is None:
+        raise ModuleNotFoundError("torch is required") from _TORCH_IMPORT_ERROR
+    if std <= 0.0:
+        raise ValueError(f"{label} std must be positive")
+    log_std = getattr(model.policy, "log_std", None)
+    if log_std is None:
+        raise RuntimeError("policy does not expose log_std")
+    if index < 0 or index >= int(log_std.shape[-1]):
+        raise IndexError(f"action index {index} out of range for log_std shape {tuple(log_std.shape)}")
+    with th.no_grad():
+        before_log_std = float(log_std[index].detach().cpu().item())
+        before_std = math.exp(before_log_std)
+        log_std[index].fill_(math.log(float(std)))
+        after_log_std = float(log_std[index].detach().cpu().item())
+        after_std = math.exp(after_log_std)
+    print(
+        f"set_{label}_std index={index} "
+        f"before_log_std={before_log_std:+.3f} before_std={before_std:.3f} "
+        f"after_log_std={after_log_std:+.3f} after_std={after_std:.3f}",
+        flush=True,
+    )
+
+
+def _set_log_std(model, log_std_value: float) -> None:
+    if th is None:
+        raise ModuleNotFoundError("torch is required") from _TORCH_IMPORT_ERROR
+    log_std = getattr(model.policy, "log_std", None)
+    if log_std is None:
+        raise RuntimeError("policy does not expose log_std")
+    with th.no_grad():
+        before_mean = float(log_std.detach().cpu().mean().item())
+        before_std_mean = math.exp(before_mean)
+        log_std.fill_(float(log_std_value))
+        after_mean = float(log_std.detach().cpu().mean().item())
+        after_std_mean = math.exp(after_mean)
+    print(
+        "set_log_std "
+        f"before_mean={before_mean:+.3f} before_std_mean={before_std_mean:.3f} "
+        f"after_mean={after_mean:+.3f} after_std_mean={after_std_mean:.3f}",
+        flush=True,
+    )
+
+
+def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
+    if args.set_log_std is not None:
+        _set_log_std(model, float(args.set_log_std))
+    if args.set_accel_brake_mean is not None:
+        _set_accel_brake_mean(model, float(args.set_accel_brake_mean))
+    if args.set_accel_brake_std is not None:
+        _set_action_std(model, 0, float(args.set_accel_brake_std), "accel_brake")
+    if args.set_steering_std is not None:
+        _set_action_std(model, 1, float(args.set_steering_std), "steering")
 
 
 def _accept_workers(server: socket.socket, expected_workers: int) -> dict[str, socket.socket]:
