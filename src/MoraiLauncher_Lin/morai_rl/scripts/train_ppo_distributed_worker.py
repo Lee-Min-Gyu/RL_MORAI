@@ -111,6 +111,7 @@ def _connect(host: str, port: int, retry_sec: float) -> socket.socket:
             print(f"connect_failed host={host} port={port} error={exc}", flush=True)
             time.sleep(max(0.1, retry_sec))
             continue
+        sock.settimeout(None)
         print(f"connected_to_learner host={host} port={port}", flush=True)
         return sock
 
