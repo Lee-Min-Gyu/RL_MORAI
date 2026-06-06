@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--policy", default="auto")
     parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
+    parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
     parser.add_argument("--set-log-std", type=float, default=None)
@@ -131,6 +132,7 @@ def _build_or_load_model(args: argparse.Namespace, save_dir: Path):
             gamma=args.gamma,
             gae_lambda=args.gae_lambda,
             device=args.device,
+            action_dist=args.action_dist,
             verbose=args.sb3_verbose,
             tensorboard_log=str(save_dir / "tb"),
         )
@@ -147,6 +149,7 @@ def _build_or_load_model(args: argparse.Namespace, save_dir: Path):
         device=args.device,
         policy=args.policy,
         features_extractor=args.features_extractor,
+        action_dist=args.action_dist,
         std_init=args.std_init,
         log_std_init=args.log_std_init,
         verbose=args.sb3_verbose,

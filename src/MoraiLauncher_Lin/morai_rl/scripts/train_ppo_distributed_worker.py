@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--policy", default="auto")
     parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
+    parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
     return parser.parse_args()
@@ -55,6 +56,7 @@ def main() -> None:
         device=args.device,
         policy=args.policy,
         features_extractor=args.features_extractor,
+        action_dist=args.action_dist,
         std_init=args.std_init,
         log_std_init=args.log_std_init,
     )

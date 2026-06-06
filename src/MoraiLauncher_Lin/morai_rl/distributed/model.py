@@ -22,6 +22,11 @@ else:
     _SB3_IMPORT_ERROR = None
 
 from morai_rl.distributed.spaces import build_action_space, build_observation_space
+from morai_rl.policies.squashed_policy import (
+    SquashedActorCriticCnnPolicy,
+    SquashedActorCriticPolicy,
+    SquashedMultiInputActorCriticPolicy,
+)
 
 
 class SpaceOnlyEnv(gym.Env if gym is not None else object):
@@ -72,6 +77,7 @@ def build_distributed_ppo(
     device: str,
     policy: str = "auto",
     features_extractor: str = "auto",
+    action_dist: str = "gaussian",
     std_init: float = 0.1,
     log_std_init: float | None = None,
     verbose: int = 0,
@@ -81,16 +87,20 @@ def build_distributed_ppo(
         raise ModuleNotFoundError("stable-baselines3 and torch are required") from _SB3_IMPORT_ERROR
 
     vec_env = build_space_only_vec_env(config_path, n_envs=n_envs)
-    policy_name = _resolve_policy_name(policy, vec_env.observation_space)
+    policy_class, _policy_label, base_policy_name = _resolve_policy(
+        policy,
+        action_dist,
+        vec_env.observation_space,
+    )
     policy_kwargs = _build_policy_kwargs(
         features_extractor=features_extractor,
-        policy_name=policy_name,
+        policy_name=base_policy_name,
         observation_space=vec_env.observation_space,
         std_init=std_init,
         log_std_init=log_std_init,
     )
     model = PPO(
-        policy=policy_name,
+        policy=policy_class,
         env=vec_env,
         learning_rate=learning_rate,
         n_steps=n_steps,
@@ -118,6 +128,7 @@ def load_distributed_ppo(
     gamma: float,
     gae_lambda: float,
     device: str,
+    action_dist: str = "gaussian",
     verbose: int = 0,
     tensorboard_log: str | None = None,
 ):
@@ -138,6 +149,8 @@ def load_distributed_ppo(
         verbose=verbose,
         tensorboard_log=tensorboard_log,
     )
+    if action_dist == "tanh_squashed":
+        _enable_squashed_action_dist(model)
     return model
 
 
@@ -167,6 +180,23 @@ def _resolve_policy_name(policy: str, observation_space) -> str:
     return "MlpPolicy"
 
 
+def _resolve_policy(policy: str, action_dist: str, observation_space):
+    policy_name = _resolve_policy_name(policy, observation_space)
+    if action_dist == "gaussian":
+        return policy_name, policy_name, policy_name
+    if action_dist != "tanh_squashed":
+        raise ValueError(f"unsupported action_dist: {action_dist!r}")
+    if policy_name == "MlpPolicy":
+        return SquashedActorCriticPolicy, "SquashedMlpPolicy", policy_name
+    if policy_name == "CnnPolicy":
+        return SquashedActorCriticCnnPolicy, "SquashedCnnPolicy", policy_name
+    if policy_name == "MultiInputPolicy":
+        return SquashedMultiInputActorCriticPolicy, "SquashedMultiInputPolicy", policy_name
+    raise ValueError(
+        f"action_dist='tanh_squashed' only supports MlpPolicy, CnnPolicy, or MultiInputPolicy; got {policy_name!r}"
+    )
+
+
 def _build_policy_kwargs(
     *,
     features_extractor: str,
@@ -190,6 +220,20 @@ def _build_policy_kwargs(
     if log_std_init is not None:
         policy_kwargs["log_std_init"] = float(log_std_init)
     return policy_kwargs
+
+
+def _enable_squashed_action_dist(model) -> None:
+    if gym is None:  # pragma: no cover - runtime guard
+        raise ModuleNotFoundError("gymnasium is required for distributed PPO") from _SB3_IMPORT_ERROR
+    action_space = model.action_space
+    if not isinstance(action_space, gym.spaces.Box):
+        raise TypeError("tanh-squashed actions require a continuous Box action space")
+    if not (np.allclose(action_space.low, -1.0) and np.allclose(action_space.high, 1.0)):
+        raise ValueError("tanh-squashed PPO policy currently expects Box(-1, 1) actions")
+    from stable_baselines3.common.distributions import SquashedDiagGaussianDistribution
+    from stable_baselines3.common.preprocessing import get_action_dim
+
+    model.policy.action_dist = SquashedDiagGaussianDistribution(get_action_dim(action_space))
 
 
 def _zero_observation(space):
