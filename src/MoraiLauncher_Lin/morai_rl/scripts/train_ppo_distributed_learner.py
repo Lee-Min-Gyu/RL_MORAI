@@ -90,9 +90,12 @@ def main() -> None:
                 f"timesteps={model.num_timesteps} elapsed_sec={elapsed:.2f}",
                 flush=True,
             )
+            if model.num_timesteps >= args.timesteps:
+                break
             _broadcast_policy(clients, model, policy_version)
 
         model.save(str(save_dir / "ppo_model_final"))
+        _broadcast_shutdown(clients)
         print(f"learner_done saved_model={save_dir / 'ppo_model_final'}", flush=True)
 
 
@@ -129,6 +132,12 @@ def _broadcast_policy(clients: dict[str, socket.socket], model, policy_version: 
             f"policy_sent worker_id={worker_id} policy_version={policy_version} checksum={checksum[:12]}",
             flush=True,
         )
+
+
+def _broadcast_shutdown(clients: dict[str, socket.socket]) -> None:
+    for worker_id, sock in clients.items():
+        send_message(sock, {"type": "shutdown"})
+        print(f"shutdown_sent worker_id={worker_id}", flush=True)
 
 
 def _recv_rollouts(clients: dict[str, socket.socket], expected_version: int) -> list[dict]:

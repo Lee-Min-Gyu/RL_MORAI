@@ -67,6 +67,9 @@ def main() -> None:
     try:
         while True:
             message = recv_message(sock)
+            if message.get("type") == "shutdown":
+                print(f"shutdown_received worker_id={args.worker_id}", flush=True)
+                break
             if message.get("type") != "policy":
                 raise RuntimeError(f"expected policy message, got {message.get('type')!r}")
             policy_version = int(message["policy_version"])

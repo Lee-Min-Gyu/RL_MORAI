@@ -41,6 +41,11 @@ from morai_rl.core.simulator_process import (
     terminate_processes_by_name,
 )
 from morai_rl.envs.gym_wrapper import GymMoraiEnv
+from morai_rl.policies.squashed_policy import (
+    SquashedActorCriticCnnPolicy,
+    SquashedActorCriticPolicy,
+    SquashedMultiInputActorCriticPolicy,
+)
 from morai_rl.policies.roach_extractor import RoachCombinedExtractor
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
@@ -167,66 +172,102 @@ class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
             raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
         super().__init__()
         self.log_freq = max(0, int(log_freq))
-        self._raw_batches: list[np.ndarray] = []
-        self._clipped_batches: list[np.ndarray] = []
+        self._raw_mean_batches: list[np.ndarray] = []
+        self._raw_std_batches: list[np.ndarray] = []
+        self._action_batches: list[np.ndarray] = []
+        self._env_action_batches: list[np.ndarray] = []
 
     def _on_step(self) -> bool:
         if self.log_freq <= 0:
             return True
-        raw = self.locals.get("actions")
-        if raw is None:
+        actions = self.locals.get("actions")
+        if actions is None:
             return True
-        raw_array = np.asarray(raw, dtype=np.float32)
-        if raw_array.ndim == 1:
-            raw_array = raw_array.reshape(1, -1)
+        action_array = np.asarray(actions, dtype=np.float32)
+        if action_array.ndim == 1:
+            action_array = action_array.reshape(1, -1)
         clipped = self.locals.get("clipped_actions")
         if clipped is None:
-            clipped_array = np.clip(raw_array, -1.0, 1.0)
+            clipped_array = np.clip(action_array, -1.0, 1.0)
         else:
             clipped_array = np.asarray(clipped, dtype=np.float32)
             if clipped_array.ndim == 1:
                 clipped_array = clipped_array.reshape(1, -1)
-        self._raw_batches.append(raw_array.copy())
-        self._clipped_batches.append(clipped_array.copy())
+        raw_mean, raw_std = self._raw_action_params()
+        if raw_mean is not None and raw_std is not None:
+            self._raw_mean_batches.append(raw_mean)
+            self._raw_std_batches.append(raw_std)
+        self._action_batches.append(action_array.copy())
+        self._env_action_batches.append(clipped_array.copy())
         if self.num_timesteps > 0 and self.num_timesteps % self.log_freq == 0:
             self._print_and_clear()
         return True
 
+    def _raw_action_params(self) -> tuple[np.ndarray | None, np.ndarray | None]:
+        if th is None:
+            return None, None
+        obs_tensor = self.locals.get("obs_tensor")
+        if obs_tensor is None or self.model is None:
+            return None, None
+        policy = self.model.policy
+        with th.no_grad():
+            if hasattr(policy, "raw_action_params"):
+                raw_mean, raw_std = policy.raw_action_params(obs_tensor)
+            else:
+                features = policy.extract_features(obs_tensor)
+                if policy.share_features_extractor:
+                    latent_pi, _ = policy.mlp_extractor(features)
+                else:
+                    pi_features, _ = features
+                    latent_pi = policy.mlp_extractor.forward_actor(pi_features)
+                raw_mean = policy.action_net(latent_pi)
+                log_std = getattr(policy, "log_std", None)
+                if log_std is None:
+                    return None, None
+                raw_std = th.ones_like(raw_mean) * log_std.exp()
+        return raw_mean.detach().cpu().numpy(), raw_std.detach().cpu().numpy()
+
     def _print_and_clear(self) -> None:
-        if not self._raw_batches:
+        if not self._action_batches:
             return
-        raw = np.concatenate(self._raw_batches, axis=0)
-        clipped = np.concatenate(self._clipped_batches, axis=0)
-        self._raw_batches.clear()
-        self._clipped_batches.clear()
-        if raw.shape[1] >= 2:
+        actions = np.concatenate(self._action_batches, axis=0)
+        env_actions = np.concatenate(self._env_action_batches, axis=0)
+        raw_mean = np.concatenate(self._raw_mean_batches, axis=0) if self._raw_mean_batches else actions
+        raw_std = np.concatenate(self._raw_std_batches, axis=0) if self._raw_std_batches else np.zeros_like(actions)
+        self._raw_mean_batches.clear()
+        self._raw_std_batches.clear()
+        self._action_batches.clear()
+        self._env_action_batches.clear()
+        if actions.shape[1] >= 2:
             accel_index = 0
             steer_index = 1
         else:
             return
-        steer_raw = raw[:, steer_index]
-        steer_clipped = clipped[:, steer_index]
-        steer_clip_ratio = float(np.mean(np.abs(steer_raw - steer_clipped) > 1e-6))
+        steer_action = env_actions[:, steer_index]
+        steer_clip_ratio = float(np.mean(np.abs(actions[:, steer_index] - steer_action) > 1e-6))
+        steer_saturation_ratio = float(np.mean(np.abs(steer_action) > 0.999))
         print(
             "action_stats "
             f"total_timesteps={self.num_timesteps} "
-            f"raw_steer_mean={float(np.mean(steer_raw)):+.3f} "
-            f"raw_steer_std={float(np.std(steer_raw)):.3f} "
-            f"raw_steer_min={float(np.min(steer_raw)):+.3f} "
-            f"raw_steer_max={float(np.max(steer_raw)):+.3f} "
-            f"clipped_steer_mean={float(np.mean(steer_clipped)):+.3f} "
-            f"clipped_steer_min={float(np.min(steer_clipped)):+.3f} "
-            f"clipped_steer_max={float(np.max(steer_clipped)):+.3f} "
-            f"clip_ratio={steer_clip_ratio:.3f} ",
+            f"raw_steer_mean={float(np.mean(raw_mean[:, steer_index])):+.3f} "
+            f"raw_steer_std={float(np.mean(raw_std[:, steer_index])):.3f} "
+            f"squashed_steer_mean={float(np.mean(steer_action)):+.3f} "
+            f"squashed_steer_min={float(np.min(steer_action)):+.3f} "
+            f"squashed_steer_max={float(np.max(steer_action)):+.3f} "
+            f"steering_saturation_ratio={steer_saturation_ratio:.3f} "
+            f"clip_ratio={steer_clip_ratio:.3f}",
             flush=True,
         )
-        accel_raw = raw[:, accel_index]
-        accel_clipped = clipped[:, accel_index]
-        accel_clip_ratio = float(np.mean(np.abs(accel_raw - accel_clipped) > 1e-6))
+        accel_action = env_actions[:, accel_index]
+        accel_clip_ratio = float(np.mean(np.abs(actions[:, accel_index] - accel_action) > 1e-6))
+        accel_saturation_ratio = float(np.mean(np.abs(accel_action) > 0.999))
         print(
-            f"raw_accel_brake_mean={float(np.mean(accel_raw)):+.3f} "
-            f"raw_accel_brake_std={float(np.std(accel_raw)):.3f} "
-            f"clipped_accel_brake_mean={float(np.mean(accel_clipped)):+.3f} "
+            f"raw_accel_brake_mean={float(np.mean(raw_mean[:, accel_index])):+.3f} "
+            f"raw_accel_brake_std={float(np.mean(raw_std[:, accel_index])):.3f} "
+            f"squashed_accel_brake_mean={float(np.mean(accel_action)):+.3f} "
+            f"squashed_accel_brake_min={float(np.min(accel_action)):+.3f} "
+            f"squashed_accel_brake_max={float(np.max(accel_action)):+.3f} "
+            f"accel_brake_saturation_ratio={accel_saturation_ratio:.3f} "
             f"accel_brake_clip_ratio={accel_clip_ratio:.3f}",
             flush=True,
         )
@@ -353,6 +394,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--policy", default="auto")
     parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
+    parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
     parser.add_argument("--set-log-std", type=float, default=None)
@@ -404,6 +446,21 @@ def _resolve_policy_name(args: argparse.Namespace, env) -> str:
     return "MlpPolicy"
 
 
+def _resolve_policy(args: argparse.Namespace, env):
+    policy_name = _resolve_policy_name(args, env)
+    if args.action_dist != "tanh_squashed":
+        return policy_name, policy_name, policy_name
+    if policy_name == "MlpPolicy":
+        return SquashedActorCriticPolicy, "SquashedMlpPolicy", policy_name
+    if policy_name == "CnnPolicy":
+        return SquashedActorCriticCnnPolicy, "SquashedCnnPolicy", policy_name
+    if policy_name == "MultiInputPolicy":
+        return SquashedMultiInputActorCriticPolicy, "SquashedMultiInputPolicy", policy_name
+    raise ValueError(
+        f"--action-dist tanh_squashed only supports MlpPolicy, CnnPolicy, or MultiInputPolicy; got {policy_name!r}"
+    )
+
+
 def _should_use_roach(args: argparse.Namespace, env, policy_name: str) -> bool:
     if args.features_extractor == "roach":
         return True
@@ -425,9 +482,10 @@ def _build_policy_kwargs(args: argparse.Namespace, env, policy_name: str) -> dic
 
 
 def _build_model(args: argparse.Namespace, env, save_dir: Path):
-    policy_name = _resolve_policy_name(args, env)
+    policy, policy_name, base_policy_name = _resolve_policy(args, env)
     print(f"policy={policy_name}", flush=True)
-    policy_kwargs = _build_policy_kwargs(args, env, policy_name)
+    print(f"action_dist={args.action_dist}", flush=True)
+    policy_kwargs = _build_policy_kwargs(args, env, base_policy_name)
     if "features_extractor_class" in policy_kwargs:
         print("features_extractor=roach", flush=True)
     else:
@@ -444,10 +502,12 @@ def _build_model(args: argparse.Namespace, env, save_dir: Path):
         model = PPO.load(str(resume_path), env=env, device=args.device)
         model.verbose = args.sb3_verbose
         model.tensorboard_log = str(save_dir / "tb")
+        if args.action_dist == "tanh_squashed":
+            _enable_squashed_action_dist(model)
         return model
 
     return PPO(
-        policy=policy_name,
+        policy=policy,
         env=env,
         learning_rate=args.learning_rate,
         n_steps=args.n_steps,
@@ -458,6 +518,21 @@ def _build_model(args: argparse.Namespace, env, save_dir: Path):
         device=args.device,
         policy_kwargs=policy_kwargs,
     )
+
+
+def _enable_squashed_action_dist(model) -> None:
+    if th is None:
+        return
+    action_space = model.action_space
+    if not isinstance(action_space, gym.spaces.Box):
+        raise TypeError("tanh-squashed actions require a continuous Box action space")
+    if not (np.allclose(action_space.low, -1.0) and np.allclose(action_space.high, 1.0)):
+        raise ValueError("tanh-squashed PPO policy currently expects Box(-1, 1) actions")
+    from stable_baselines3.common.distributions import SquashedDiagGaussianDistribution
+    from stable_baselines3.common.preprocessing import get_action_dim
+
+    model.policy.action_dist = SquashedDiagGaussianDistribution(get_action_dim(action_space))
+    print("converted_loaded_policy_action_dist=tanh_squashed", flush=True)
 
 
 def _remaining_timesteps(target_timesteps: int, completed_timesteps: int) -> int:
