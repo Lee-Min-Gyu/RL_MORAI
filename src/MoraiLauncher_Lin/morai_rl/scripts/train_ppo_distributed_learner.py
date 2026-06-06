@@ -15,6 +15,11 @@ except ModuleNotFoundError as exc:  # pragma: no cover - runtime guard
 else:
     _TORCH_IMPORT_ERROR = None
 
+try:
+    from tqdm.auto import tqdm
+except ModuleNotFoundError:  # pragma: no cover - optional progress UI
+    tqdm = None
+
 from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state, load_distributed_ppo
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.distributed.rollout_buffer import fill_rollout_buffer
@@ -49,6 +54,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--set-steering-std", type=float, default=None)
     parser.add_argument("--resume-from", default="")
     parser.add_argument("--sb3-verbose", type=int, default=0)
+    parser.add_argument("--progress-bar", action="store_true")
+    parser.add_argument("--checkpoint-freq", type=int, default=6_144)
     return parser.parse_args()
 
 
@@ -56,6 +63,8 @@ def main() -> None:
     args = parse_args()
     save_dir = Path(args.save_dir) / args.run_name
     save_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_dir = save_dir / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     model = _build_or_load_model(args, save_dir)
     _apply_policy_overrides(model, args)
@@ -81,25 +90,40 @@ def main() -> None:
         _broadcast_policy(clients, model, policy_version)
 
         update_count = 0
-        while model.num_timesteps < args.timesteps:
-            started_at = time.monotonic()
-            rollouts = _recv_rollouts(clients, expected_version=policy_version)
-            fill_rollout_buffer(model, rollouts)
-            model._update_current_progress_remaining(model.num_timesteps, args.timesteps)
-            model.train()
-            update_count += 1
-            policy_version += 1
-            model.save(str(save_dir / "ppo_model"))
-            elapsed = time.monotonic() - started_at
-            print(
-                "learner_update "
-                f"update={update_count} policy_version={policy_version} "
-                f"timesteps={model.num_timesteps} elapsed_sec={elapsed:.2f}",
-                flush=True,
-            )
-            if model.num_timesteps >= args.timesteps:
-                break
-            _broadcast_policy(clients, model, policy_version)
+        last_checkpoint_step = int(model.num_timesteps)
+        progress_bar = _make_progress_bar(args, initial_timesteps=int(model.num_timesteps))
+        try:
+            while model.num_timesteps < args.timesteps:
+                before_timesteps = int(model.num_timesteps)
+                started_at = time.monotonic()
+                rollouts = _recv_rollouts(clients, expected_version=policy_version)
+                _log_rollout_stats(rollouts, policy_version)
+                fill_rollout_buffer(model, rollouts)
+                model._update_current_progress_remaining(model.num_timesteps, args.timesteps)
+                model.train()
+                update_count += 1
+                policy_version += 1
+                model.save(str(save_dir / "ppo_model"))
+                last_checkpoint_step = _save_checkpoint_if_due(
+                    model=model,
+                    checkpoint_dir=checkpoint_dir,
+                    checkpoint_freq=args.checkpoint_freq,
+                    last_checkpoint_step=last_checkpoint_step,
+                )
+                elapsed = time.monotonic() - started_at
+                _update_progress_bar(progress_bar, int(model.num_timesteps) - before_timesteps)
+                print(
+                    "learner_update "
+                    f"update={update_count} policy_version={policy_version} "
+                    f"timesteps={model.num_timesteps} elapsed_sec={elapsed:.2f}",
+                    flush=True,
+                )
+                if model.num_timesteps >= args.timesteps:
+                    break
+                _broadcast_policy(clients, model, policy_version)
+        finally:
+            if progress_bar is not None:
+                progress_bar.close()
 
         model.save(str(save_dir / "ppo_model_final"))
         _broadcast_shutdown(clients)
@@ -239,6 +263,101 @@ def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
         _set_action_std(model, 0, float(args.set_accel_brake_std), "accel_brake")
     if args.set_steering_std is not None:
         _set_action_std(model, 1, float(args.set_steering_std), "steering")
+
+
+def _make_progress_bar(args: argparse.Namespace, initial_timesteps: int):
+    if not args.progress_bar:
+        return None
+    if tqdm is None:
+        print("progress_bar unavailable: install tqdm to enable it", flush=True)
+        return None
+    return tqdm(
+        total=int(args.timesteps),
+        initial=max(0, int(initial_timesteps)),
+        unit="step",
+        dynamic_ncols=True,
+    )
+
+
+def _update_progress_bar(progress_bar, delta_timesteps: int) -> None:
+    if progress_bar is not None and delta_timesteps > 0:
+        progress_bar.update(int(delta_timesteps))
+
+
+def _save_checkpoint_if_due(
+    *,
+    model,
+    checkpoint_dir: Path,
+    checkpoint_freq: int,
+    last_checkpoint_step: int,
+) -> int:
+    checkpoint_freq = int(checkpoint_freq)
+    current_step = int(model.num_timesteps)
+    if checkpoint_freq <= 0:
+        return int(last_checkpoint_step)
+    if current_step - int(last_checkpoint_step) < checkpoint_freq:
+        return int(last_checkpoint_step)
+    checkpoint_path = checkpoint_dir / f"ppo_checkpoint_{current_step}_steps"
+    model.save(str(checkpoint_path))
+    print(f"saved_checkpoint={checkpoint_path}.zip", flush=True)
+    return current_step
+
+
+def _log_rollout_stats(rollouts: list[dict], policy_version: int) -> None:
+    episode_summaries = [
+        episode
+        for rollout in rollouts
+        for episode in rollout.get("episode_summaries", [])
+        if isinstance(episode, dict)
+    ]
+    total_reward = sum(float(rollout_reward) for rollout in rollouts for rollout_reward in rollout.get("rewards", []))
+    total_steps = sum(int(rollout.get("steps", 0)) for rollout in rollouts)
+    mean_step_reward = total_reward / total_steps if total_steps > 0 else 0.0
+    print(
+        "rollout_stats "
+        f"policy_version={policy_version} workers={len(rollouts)} "
+        f"steps={total_steps} mean_step_reward={mean_step_reward:+.4f} "
+        f"completed_episodes={len(episode_summaries)}",
+        flush=True,
+    )
+    for rollout in rollouts:
+        summaries = [episode for episode in rollout.get("episode_summaries", []) if isinstance(episode, dict)]
+        if not summaries:
+            continue
+        worker_id = rollout.get("worker_id")
+        rewards = [float(summary.get("episode_reward", 0.0)) for summary in summaries]
+        progresses = [float(summary.get("episode_progress_m", 0.0)) for summary in summaries]
+        steps = [int(summary.get("step_count", 0) or 0) for summary in summaries]
+        print(
+            "worker_episode_stats "
+            f"worker_id={worker_id} episodes={len(summaries)} "
+            f"reward_mean={sum(rewards) / len(rewards):+.3f} "
+            f"progress_mean={sum(progresses) / len(progresses):+.2f} "
+            f"steps_mean={sum(steps) / len(steps):.1f} "
+            f"last_reason={summaries[-1].get('termination_reason')}",
+            flush=True,
+        )
+        _print_reward_terms(worker_id, summaries)
+
+
+def _print_reward_terms(worker_id, summaries: list[dict]) -> None:
+    term_sums: dict[str, float] = {}
+    term_counts: dict[str, int] = {}
+    for summary in summaries:
+        reward_terms = summary.get("reward_terms")
+        if not isinstance(reward_terms, dict):
+            continue
+        for key, value in reward_terms.items():
+            if isinstance(value, (int, float)):
+                term_sums[key] = term_sums.get(key, 0.0) + float(value)
+                term_counts[key] = term_counts.get(key, 0) + 1
+    if not term_sums:
+        return
+    compact_terms = " ".join(
+        f"{key}={term_sums[key] / max(1, term_counts[key]):+.3f}"
+        for key in sorted(term_sums)
+    )
+    print(f"worker_reward_terms worker_id={worker_id} {compact_terms}", flush=True)
 
 
 def _accept_workers(server: socket.socket, expected_workers: int) -> dict[str, socket.socket]:

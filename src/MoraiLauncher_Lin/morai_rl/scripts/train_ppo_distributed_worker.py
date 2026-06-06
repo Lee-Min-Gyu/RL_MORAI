@@ -65,6 +65,7 @@ def main() -> None:
     send_message(sock, {"type": "hello", "worker_id": args.worker_id})
     obs, _info = env.reset()
     episode_start = True
+    episode_tracker = _new_episode_tracker()
 
     try:
         while True:
@@ -85,8 +86,10 @@ def main() -> None:
             rollout, obs, episode_start = _collect_rollout(
                 env=env,
                 model=model,
+                worker_id=args.worker_id,
                 initial_obs=obs,
                 initial_episode_start=episode_start,
+                episode_tracker=episode_tracker,
                 rollout_steps=args.rollout_steps,
             )
             send_message(
@@ -125,8 +128,10 @@ def _collect_rollout(
     *,
     env: GymMoraiEnv,
     model,
+    worker_id: str,
     initial_obs,
     initial_episode_start: bool,
+    episode_tracker: dict,
     rollout_steps: int,
 ) -> tuple[dict, object, bool]:
     model.policy.set_training_mode(False)
@@ -141,12 +146,14 @@ def _collect_rollout(
     terminateds = []
     truncateds = []
     infos = []
+    episode_summaries = []
 
     for _ in range(int(rollout_steps)):
         action, value, log_prob = _sample_action(model, obs)
         clipped_action = np.clip(action, env.action_space.low, env.action_space.high)
         next_obs, reward, terminated, truncated, info = env.step(clipped_action)
         done = bool(terminated or truncated)
+        _update_episode_tracker(episode_tracker, reward, info)
 
         observations.append(_copy_observation(obs))
         actions.append(np.asarray(action, dtype=np.float32))
@@ -159,6 +166,7 @@ def _collect_rollout(
         infos.append(_compact_info(info))
 
         if done:
+            episode_summaries.append(_finish_episode_tracker(episode_tracker, info, worker_id))
             obs, _reset_info = env.reset()
             episode_start = True
         else:
@@ -181,6 +189,7 @@ def _collect_rollout(
             "last_value": float(last_value),
             "last_episode_start": float(episode_start),
             "infos": infos,
+            "episode_summaries": episode_summaries,
         },
         obs,
         episode_start,
@@ -219,6 +228,79 @@ def _compact_info(info: dict) -> dict:
         "progress_delta_m": info.get("progress_delta_m"),
         "reward_terms": info.get("reward_terms"),
     }
+
+
+def _new_episode_tracker() -> dict:
+    return {
+        "episode_count": 0,
+        "total_timesteps": 0,
+        "episode_reward": 0.0,
+        "reward_terms": {},
+    }
+
+
+def _update_episode_tracker(tracker: dict, reward: float, info: dict) -> None:
+    tracker["total_timesteps"] = int(tracker.get("total_timesteps", 0)) + 1
+    tracker["episode_reward"] = float(tracker.get("episode_reward", 0.0)) + float(reward)
+    reward_terms = info.get("reward_terms")
+    if not isinstance(reward_terms, dict):
+        return
+    term_sums = tracker.setdefault("reward_terms", {})
+    for key, value in reward_terms.items():
+        if isinstance(value, (int, float)):
+            term_sums[key] = float(term_sums.get(key, 0.0)) + float(value)
+
+
+def _finish_episode_tracker(tracker: dict, info: dict, worker_id: str) -> dict:
+    tracker["episode_count"] = int(tracker.get("episode_count", 0)) + 1
+    summary = {
+        "episode_count": int(tracker.get("episode_count", 0)),
+        "total_timesteps": int(tracker.get("total_timesteps", 0)),
+        "scenario_name": info.get("scenario_name"),
+        "termination_reason": info.get("termination_reason"),
+        "step_count": info.get("step_count"),
+        "episode_progress_m": info.get("episode_progress_m"),
+        "episode_reward": float(tracker.get("episode_reward", 0.0)),
+        "reward_terms": dict(tracker.get("reward_terms", {})),
+    }
+    _print_episode_summary(worker_id, summary)
+    tracker["episode_reward"] = 0.0
+    tracker["reward_terms"] = {}
+    return summary
+
+
+def _print_episode_summary(worker_id: str, summary: dict) -> None:
+    print(
+        "worker_episode_end "
+        f"worker_id={worker_id} "
+        f"count={summary.get('episode_count')} "
+        f"total_timesteps={summary.get('total_timesteps')} "
+        f"scenario={summary.get('scenario_name')} "
+        f"reason={summary.get('termination_reason')} "
+        f"steps={summary.get('step_count')}",
+        flush=True,
+    )
+    _print_float_line("  progress_m", summary.get("episode_progress_m"))
+    _print_float_line("  total_reward", summary.get("episode_reward"))
+    reward_terms = summary.get("reward_terms")
+    if not isinstance(reward_terms, dict) or not reward_terms:
+        return
+    print("  reward_terms", flush=True)
+    for key, value in reward_terms.items():
+        if isinstance(value, (int, float)):
+            signed_value = float(value)
+            if key.endswith("_penalty"):
+                signed_value = -signed_value
+            print(f"    {key}={signed_value:+.3f}", flush=True)
+        else:
+            print(f"    {key}={value}", flush=True)
+
+
+def _print_float_line(label: str, value) -> None:
+    try:
+        print(f"{label}={float(value):+.3f}", flush=True)
+    except (TypeError, ValueError):
+        print(f"{label}={value}", flush=True)
 
 
 if __name__ == "__main__":
