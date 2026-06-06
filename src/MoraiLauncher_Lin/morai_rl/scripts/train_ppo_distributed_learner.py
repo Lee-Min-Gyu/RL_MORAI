@@ -59,6 +59,12 @@ def main() -> None:
         verbose=args.sb3_verbose,
         tensorboard_log=str(save_dir / "tb"),
     )
+    model._setup_learn(
+        total_timesteps=args.timesteps,
+        reset_num_timesteps=True,
+        tb_log_name=args.run_name,
+        progress_bar=False,
+    )
 
     with socket.create_server((args.host, args.port), reuse_port=False) as server:
         server.listen(args.workers)
