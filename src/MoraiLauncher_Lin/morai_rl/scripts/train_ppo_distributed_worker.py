@@ -18,6 +18,11 @@ else:
 from morai_rl.distributed.model import build_distributed_ppo, load_policy_state
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.envs.gym_wrapper import GymMoraiEnv
+from morai_rl.scripts.train_ppo import (
+    _close_env_quietly,
+    _recover_runtime_after_crash,
+    _runtime_recovery_options,
+)
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
 
@@ -36,6 +41,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
+    parser.add_argument("--max-restarts", type=int, default=3)
+    parser.add_argument("--restart-wait-sec", type=float, default=2.0)
+    parser.add_argument("--runtime-recovery", action="store_true")
+    parser.add_argument("--disable-runtime-recovery", action="store_true")
+    parser.add_argument("--simulator-process-name", action="append", default=[])
+    parser.add_argument("--simulator-terminate-timeout-sec", type=float, default=None)
+    parser.add_argument("--simulator-relaunch-command", default="")
+    parser.add_argument("--simulator-relaunch-wait-sec", type=float, default=None)
     return parser.parse_args()
 
 
@@ -43,6 +56,14 @@ def main() -> None:
     if th is None:  # pragma: no cover - runtime guard
         raise ModuleNotFoundError("torch is required") from _TORCH_IMPORT_ERROR
     args = parse_args()
+    recovery_options = _runtime_recovery_options(args)
+    if recovery_options["enabled"]:
+        print(
+            "worker_runtime_recovery enabled "
+            f"worker_id={args.worker_id} process_names={recovery_options['process_names']} "
+            f"relaunch_command={recovery_options['relaunch_command']!r}",
+            flush=True,
+        )
     env = GymMoraiEnv(args.config)
     model = build_distributed_ppo(
         config_path=args.config,
@@ -69,7 +90,11 @@ def main() -> None:
 
     try:
         while True:
-            message = recv_message(sock)
+            try:
+                message = recv_message(sock)
+            except EOFError as exc:
+                print(f"learner_disconnected worker_id={args.worker_id} error={exc}", flush=True)
+                break
             if message.get("type") == "shutdown":
                 print(f"shutdown_received worker_id={args.worker_id}", flush=True)
                 break
@@ -83,15 +108,42 @@ def main() -> None:
                 f"checksum={str(message.get('policy_checksum', ''))[:12]}",
                 flush=True,
             )
-            rollout, obs, episode_start = _collect_rollout(
-                env=env,
-                model=model,
-                worker_id=args.worker_id,
-                initial_obs=obs,
-                initial_episode_start=episode_start,
-                episode_tracker=episode_tracker,
-                rollout_steps=args.rollout_steps,
-            )
+            restart_count = 0
+            while True:
+                try:
+                    rollout, obs, episode_start = _collect_rollout(
+                        env=env,
+                        model=model,
+                        worker_id=args.worker_id,
+                        initial_obs=obs,
+                        initial_episode_start=episode_start,
+                        episode_tracker=episode_tracker,
+                        rollout_steps=args.rollout_steps,
+                    )
+                    break
+                except RuntimeError as exc:
+                    restart_count += 1
+                    if restart_count > args.max_restarts:
+                        _send_worker_error(sock, args.worker_id, policy_version, exc)
+                        raise RuntimeError(
+                            f"worker {args.worker_id} aborted policy_version={policy_version} "
+                            f"after {restart_count} rollout restarts"
+                        ) from exc
+                    print(
+                        "worker_rollout_runtime_error "
+                        f"worker_id={args.worker_id} policy_version={policy_version} "
+                        f"restart={restart_count}/{args.max_restarts} error={exc}",
+                        flush=True,
+                    )
+                    _close_env_quietly(env)
+                    if recovery_options["enabled"]:
+                        _recover_runtime_after_crash(recovery_options)
+                    elif args.restart_wait_sec > 0.0:
+                        time.sleep(args.restart_wait_sec)
+                    env = GymMoraiEnv(args.config)
+                    obs, _info = env.reset()
+                    episode_start = True
+                    episode_tracker = _new_episode_tracker()
             send_message(
                 sock,
                 {
@@ -122,6 +174,21 @@ def _connect(host: str, port: int, retry_sec: float) -> socket.socket:
         sock.settimeout(None)
         print(f"connected_to_learner host={host} port={port}", flush=True)
         return sock
+
+
+def _send_worker_error(sock: socket.socket, worker_id: str, policy_version: int, exc: Exception) -> None:
+    try:
+        send_message(
+            sock,
+            {
+                "type": "worker_error",
+                "worker_id": worker_id,
+                "policy_version": int(policy_version),
+                "error": repr(exc),
+            },
+        )
+    except OSError as send_exc:
+        print(f"worker_error_send_failed worker_id={worker_id} error={send_exc}", flush=True)
 
 
 def _collect_rollout(

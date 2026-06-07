@@ -121,6 +121,17 @@ def main() -> None:
                 if model.num_timesteps >= args.timesteps:
                     break
                 _broadcast_policy(clients, model, policy_version)
+        except (EOFError, OSError, RuntimeError) as exc:
+            interrupted_path = save_dir / "ppo_model_interrupted"
+            model.save(str(interrupted_path))
+            print(
+                "learner_interrupted "
+                f"timesteps={model.num_timesteps} policy_version={policy_version} "
+                f"saved_model={interrupted_path}.zip error={exc}",
+                flush=True,
+            )
+            _broadcast_shutdown(clients)
+            raise
         finally:
             if progress_bar is not None:
                 progress_bar.close()
@@ -397,7 +408,11 @@ def _broadcast_policy(clients: dict[str, socket.socket], model, policy_version: 
 
 def _broadcast_shutdown(clients: dict[str, socket.socket]) -> None:
     for worker_id, sock in clients.items():
-        send_message(sock, {"type": "shutdown"})
+        try:
+            send_message(sock, {"type": "shutdown"})
+        except OSError as exc:
+            print(f"shutdown_send_failed worker_id={worker_id} error={exc}", flush=True)
+            continue
         print(f"shutdown_sent worker_id={worker_id}", flush=True)
 
 
@@ -410,7 +425,17 @@ def _recv_rollouts(clients: dict[str, socket.socket], expected_version: int) -> 
         }
         for future in as_completed(futures):
             worker_id = futures[future]
-            message = future.result()
+            try:
+                message = future.result()
+            except (EOFError, OSError) as exc:
+                raise RuntimeError(
+                    f"worker {worker_id} disconnected while waiting for policy_version={expected_version}"
+                ) from exc
+            if message.get("type") == "worker_error":
+                raise RuntimeError(
+                    f"worker {worker_id} reported error at policy_version={message.get('policy_version')}: "
+                    f"{message.get('error')}"
+                )
             if message.get("type") != "rollout":
                 raise RuntimeError(f"worker {worker_id} sent unexpected message type {message.get('type')!r}")
             if int(message["policy_version"]) != int(expected_version):
