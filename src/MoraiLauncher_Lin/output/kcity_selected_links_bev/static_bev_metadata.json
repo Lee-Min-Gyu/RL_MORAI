@@ -1,12 +1,12 @@
 {
   "map_name": "R_KR_PG_K-City",
-  "generated_at_utc": "2026-06-05T02:03:45.095835+00:00",
+  "generated_at_utc": "2026-06-07T13:11:22.414161+00:00",
   "image_size": {
-    "width_px": 1380,
+    "width_px": 1319,
     "height_px": 4599
   },
   "supersampled_image_size": {
-    "width_px": 5514,
+    "width_px": 5272,
     "height_px": 18391
   },
   "resolution_m_per_px": 0.2,
@@ -18,11 +18,11 @@
   ],
   "pixel_transform": {
     "description": "col = (x - min_x) / resolution, row = (max_y - y) / resolution",
-    "min_x": -46.54131052896141,
+    "min_x": -34.44350481417757,
     "max_y": 1865.202949630748
   },
   "world_bounds": {
-    "min_x": -46.54131052896141,
+    "min_x": -34.44350481417757,
     "min_y": 945.7085478782659,
     "max_x": 229.08290026346742,
     "max_y": 1865.202949630748
@@ -33,7 +33,7 @@
     4122635.537,
     28.991
   ],
-  "selected_link_count": 139,
+  "selected_link_count": 134,
   "selected_lane_marking_count": 0,
   "selected_link_ids": [
     "A219BS010073",
@@ -86,10 +86,8 @@
     "A219BS010409",
     "A219BS010411",
     "A219BS010412",
-    "A219BS010414",
     "A219BS010415",
     "A219BS010416",
-    "A219BS010418",
     "A219BS010419",
     "A219BS010420",
     "A219BS010427",
@@ -99,9 +97,8 @@
     "A219BS010442",
     "A219BS010469",
     "A219BS010470",
-    "A219BS010477",
-    "A219BS010480",
     "A219BS010586",
+    "A219BS010591",
     "A219BS010594",
     "A219BS010598",
     "A219BS010607",
@@ -170,13 +167,11 @@
     "A219BS010405-A219BS010404",
     "A219BS010408-A219BS010409",
     "A219BS010409-A219BS010408",
-    "A219BS010418-A219BS010419",
-    "A219BS010419-A219BS010418",
     "A219BS010420-A219BS010419",
     "A219BS010427-A219BS010428",
     "A219BS010428-A219BS010427"
   ],
-  "partial_link_count": 19,
+  "partial_link_count": 21,
   "partial_links_applied": [
     {
       "link_id": "A219BS010082-A219BS010083",
@@ -236,11 +231,11 @@
     {
       "link_id": "A219BS010377",
       "start_ratio": 0.0,
-      "end_ratio": 0.8913043478260869
+      "end_ratio": 0.7463768115942028
     },
     {
       "link_id": "A219BS010379",
-      "start_ratio": 0.011152416356877325,
+      "start_ratio": 0.040892193308550186,
       "end_ratio": 0.4793650793650794
     },
     {
@@ -254,13 +249,23 @@
       "end_ratio": 0.822463768115942
     },
     {
-      "link_id": "A219BS010477",
+      "link_id": "A219BS010427",
       "start_ratio": 0.0,
-      "end_ratio": 0.605072463768116
+      "end_ratio": 0.7065217391304348
     },
     {
-      "link_id": "A219BS010480",
-      "start_ratio": 0.4312267657992565,
+      "link_id": "A219BS010427-A219BS010428",
+      "start_ratio": 0.0,
+      "end_ratio": 0.8191489361702128
+    },
+    {
+      "link_id": "A219BS010428-A219BS010427",
+      "start_ratio": 0.0,
+      "end_ratio": 0.776595744680851
+    },
+    {
+      "link_id": "A219BS010591",
+      "start_ratio": 0.4758364312267658,
       "end_ratio": 1.0
     },
     {
@@ -278,7 +283,7 @@
   "fill_groups_applied": [
     {
       "name": "group_01",
-      "link_count": 123,
+      "link_count": 118,
       "link_ids": [
         "A219BS010073",
         "A219BS010082",
@@ -371,13 +376,9 @@
         "A219BS010404-A219BS010405",
         "A219BS010405",
         "A219BS010405-A219BS010404",
-        "A219BS010414",
         "A219BS010415",
         "A219BS010416",
-        "A219BS010418",
-        "A219BS010418-A219BS010419",
         "A219BS010419",
-        "A219BS010419-A219BS010418",
         "A219BS010420",
         "A219BS010420-A219BS010419",
         "A219BS010427",
@@ -388,9 +389,8 @@
         "A219BS010442",
         "A219BS010469",
         "A219BS010470",
-        "A219BS010477",
-        "A219BS010480",
         "A219BS010586",
+        "A219BS010591",
         "A219BS010594",
         "A219BS010598",
         "A219BS010607",
