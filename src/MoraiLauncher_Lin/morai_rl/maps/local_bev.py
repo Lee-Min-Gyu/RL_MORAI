@@ -172,7 +172,7 @@ class LocalBeVRenderer:
                     shifted[:, :dy] = 0
                 elif dy < 0:
                     shifted[:, dy:] = 0
-                boundary |= (drivable > 0) & (shifted == 0)
+                boundary |= (drivable == 0) & (shifted > 0)
         return boundary.astype(np.uint8)
 
     def _build_reference_segments(self) -> np.ndarray:

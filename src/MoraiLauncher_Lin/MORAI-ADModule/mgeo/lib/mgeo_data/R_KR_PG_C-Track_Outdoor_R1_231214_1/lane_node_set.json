@@ -1,0 +1,4688 @@
+[
+  {
+    "idx": "RB222CC010101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      3.689750431687571,
+      3.081684826873243,
+      11.985043
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      49.89940527500585,
+      -74.35427865991369,
+      11.604475
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -0.05625407968182117,
+      -2.3828419144265354,
+      11.964673
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      45.10447051329538,
+      -78.14695370523259,
+      11.642208
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      45.126459746505134,
+      -78.15788121242076,
+      11.642208
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      45.55971214687452,
+      -145.84101309301332,
+      11.14598
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020111S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      45.3247574478155,
+      -145.90625279909,
+      11.144832
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020111E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      39.26298501773272,
+      -382.31670718220994,
+      9.950387
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      39.210841451073065,
+      -382.23386487271637,
+      9.951427
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      87.05949274043087,
+      -427.70749190310016,
+      9.745111
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020121S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      87.01994800614193,
+      -427.7387785152532,
+      9.747313
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020121E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      113.12575261190068,
+      -400.21579627972096,
+      9.444786
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020126S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      113.14495020394679,
+      -400.2205179622397,
+      9.444786
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020126E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      255.0241930243792,
+      -150.93141536135226,
+      5.323288
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020131S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      255.0366407331312,
+      -150.9089265409857,
+      5.324959
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020131E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      240.55784714902984,
+      -23.329704260453582,
+      6.726263
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020136S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      240.55346964939963,
+      -23.325480261817575,
+      6.726263
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020136E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.48175894003361,
+      42.85822717519477,
+      9.486692
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020141S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.474856538116,
+      42.85619143676013,
+      9.486319
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020141E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      153.75818514137063,
+      64.7091243066825,
+      10.192633
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020146S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.8505699094385,
+      78.43312195921317,
+      10.885979
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020146E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      83.02836201997707,
+      135.15954503417015,
+      12.754456
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020151S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      82.99163748859428,
+      135.17225443851203,
+      12.754448
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020151E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.67816531099379,
+      156.35337480343878,
+      12.938342
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020156S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.650599387125112,
+      156.34487369051203,
+      12.938342
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020156E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.584162540792022,
+      117.33890056470409,
+      12.725075
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020161S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.60665598884225,
+      117.27198443189263,
+      12.725075
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020161E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -20.514905954827555,
+      90.95183529565111,
+      12.47949
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020166S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -20.517083304584958,
+      90.8180487556383,
+      12.480298
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020166E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -20.085686608799733,
+      65.03691611392424,
+      12.399258
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020176S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -16.843577224761248,
+      46.02083722315729,
+      12.304329
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020176E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -0.1887173077557236,
+      -2.197471209336072,
+      11.964945
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      50.015608056331985,
+      -74.4884842778556,
+      11.603761
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      51.159149474231526,
+      -148.24750246386975,
+      11.166221
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010111S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      51.139692539698444,
+      -148.30252856388688,
+      11.166749
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010111E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      41.91235671000322,
+      -380.5884907380678,
+      9.914802
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      41.92423209582921,
+      -380.5991646000184,
+      9.912983
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      86.17151979106711,
+      -424.45277582947165,
+      9.647059
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010121S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      86.18451012118021,
+      -424.45298704551533,
+      9.6514
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010121E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      109.84244286024477,
+      -399.67521917494014,
+      9.385788
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010126S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      109.8618998802267,
+      -399.6201929561794,
+      9.385788
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010126E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      252.1684966282337,
+      -150.38237167941406,
+      5.281799
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010131S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      252.1929413586622,
+      -150.3569906046614,
+      5.285407
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010131E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      238.51104422437493,
+      -25.300027620978653,
+      6.651159
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010136S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      238.51377923460677,
+      -25.131655915640295,
+      6.658487
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010136E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      174.19503246626118,
+      40.19609429454431,
+      9.436378
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010141S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      174.19122370390687,
+      40.20988901332021,
+      9.437103
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010141E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      151.6849518569652,
+      62.43714881082997,
+      10.195837
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010146S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      138.1627648724243,
+      76.21974969375879,
+      10.835849
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010146E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      81.2261204533279,
+      132.83595529431477,
+      12.750531
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010151S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      81.22698184853652,
+      132.81537767592818,
+      12.750531
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010151E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.49590209010057,
+      152.89208787493408,
+      12.89823
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010156S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.491491753258742,
+      152.8798544164747,
+      12.89823
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010156E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.49694032757543,
+      116.29635723261163,
+      12.662841
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010161S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.506417279015295,
+      116.27511081239209,
+      12.665703
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010161E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.555993973393925,
+      90.89390808716416,
+      12.439038
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010166S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.55786025407724,
+      90.81920834537596,
+      12.439038
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010166E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.246009430964477,
+      66.0389244207181,
+      12.366945
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010171S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.396920630009845,
+      46.8580427179113,
+      12.269807
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC010171E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      3.6678850076859817,
+      3.1269672820344567,
+      11.985043
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020201S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -13.749023208743893,
+      33.08952772244811,
+      12.204236
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020201E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      1.9355441695079207,
+      -0.12991706933826208,
+      11.97411
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020206S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      1.9551757664885372,
+      -0.20814669784158468,
+      11.972999
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020206E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      46.92017748742364,
+      -76.07105272356421,
+      11.622356
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020211S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      46.93206745444331,
+      -76.11273558344692,
+      11.623454
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020211E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      48.17901185253868,
+      -147.03314703842625,
+      11.154696
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020216S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      48.08450185856782,
+      -147.20097040757537,
+      11.154181
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC020216E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      39.17246687755687,
+      -382.24142671981826,
+      9.951427
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030201S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      38.19770260481164,
+      -48.09106429293752,
+      11.675059
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030201E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      8.314438027562574,
+      1.676565382629633,
+      11.988859
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030171S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      6.516073631530162,
+      4.472149870824069,
+      11.986624
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030171E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -11.68984327337239,
+      48.25248366780579,
+      12.241544
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030166S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.327035161899403,
+      66.02763422904536,
+      12.32872
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030166E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.653081155847758,
+      91.47738609323278,
+      12.403729
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030161S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.62740950472653,
+      91.6725908126682,
+      12.403843
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030161E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -11.351266232901253,
+      115.02523335628211,
+      12.601395
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030151S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.69288497196976,
+      149.76472941879183,
+      12.850372
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030151E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      79.00948216405232,
+      130.48921685060486,
+      12.747437
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030206S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      88.87416610878427,
+      120.65822324389592,
+      12.580941
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030206E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      131.84393443295266,
+      77.875319452025,
+      11.122301
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030141S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      149.85292832850246,
+      60.19818676169962,
+      10.184846
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030141E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      172.474106204696,
+      37.78870541322976,
+      9.409798
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030136S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      172.49128139513778,
+      37.76142234215513,
+      9.409413
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030136E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      236.4932764954865,
+      -27.497312839142978,
+      6.595202
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030131S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      236.52056283317506,
+      -27.544215704780072,
+      6.595202
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030131E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      249.99338582961354,
+      -148.4817678956315,
+      5.200119
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030126S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      250.00271486939164,
+      -148.4938505780883,
+      5.204057
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030126E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      106.23924511350924,
+      -399.4068175102584,
+      9.325613
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030121S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      106.18307546689175,
+      -399.4504708093591,
+      9.325613
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030121E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      85.91150491614826,
+      -420.64686287753284,
+      9.534519
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      85.89532132429304,
+      -420.6548403822817,
+      9.536881
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      44.68213861214463,
+      -379.7766798166558,
+      9.880325
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030111S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      44.684995403164066,
+      -379.76037578610703,
+      9.879466
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030111E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      53.63733576412778,
+      -149.65378852654248,
+      11.174926
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      53.65471948997583,
+      -149.62408647872508,
+      11.175529
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      52.55552182527026,
+      -73.12151061184704,
+      11.584146
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030156S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -11.318728576996364,
+      115.09956022491679,
+      12.602421
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030156E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      31.64907793450402,
+      149.7655657348223,
+      12.850372
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -11.69960794004146,
+      48.313530162442476,
+      12.241544
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.32740957842907,
+      65.96891674678773,
+      12.32872
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.4896602925146,
+      46.97806339152157,
+      12.27431
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.20533337746747,
+      65.6770481239073,
+      12.362958
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      52.50448136241175,
+      -73.01010127132758,
+      11.585067
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      6.544685995555483,
+      4.401967746671289,
+      11.986638
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      153.7166137805325,
+      64.72279172576964,
+      10.191612
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.8850540393032,
+      78.40271966997534,
+      10.882225
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090111S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      151.6008630284923,
+      62.579783857334405,
+      10.199312
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090111E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      138.1686742188176,
+      76.22366269119084,
+      10.83783
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030146S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      79.12365524296183,
+      130.41775324055925,
+      12.746599
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC030146E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      136.16384173871484,
+      73.44778756052256,
+      10.780967
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090103S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -20.043916901689954,
+      64.95594314252958,
+      12.39662
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090103E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -25.80658548651263,
+      58.024076726753265,
+      12.486883
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090105S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.013508816366084,
+      52.29154941253364,
+      12.461815
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090105E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -16.852735124586616,
+      46.03260118374601,
+      12.305556
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090114S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      141.86527817236492,
+      60.80145869916305,
+      10.485679
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090114E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      149.79869130114093,
+      60.28464364120737,
+      10.18747
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090112S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      136.2069996673381,
+      73.45145839359611,
+      10.780967
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090112E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      136.2720610195538,
+      64.65422220574692,
+      10.517192
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090115S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      151.61847356159706,
+      62.49756260868162,
+      10.195837
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090115E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.31068699166644,
+      62.85475517529994,
+      10.495664
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090113S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.30473989318125,
+      62.8601007447578,
+      10.495664
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090113E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      138.15403562120628,
+      76.21415715897456,
+      10.835849
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090104S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.29986454488244,
+      55.05649053584784,
+      12.480464
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090104E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.213477367244195,
+      65.84419255843386,
+      12.366945
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090102S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.463810815941542,
+      46.94443410076201,
+      12.273602
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC090102E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.31259024189785,
+      55.05448148166761,
+      12.482662
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -25.80826545902528,
+      58.02099237870425,
+      12.486915
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.743650931632146,
+      56.58256932068616,
+      12.781671
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040953S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.90638440940529,
+      56.53085684776306,
+      12.785209
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040953E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -41.87745477538556,
+      60.06386171421036,
+      12.958221
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040115S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -41.89025819359813,
+      60.08786175446585,
+      12.958364
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040115E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -45.25307218474336,
+      86.30690320953727,
+      13.367816
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040931S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -45.26298297266476,
+      86.40942392218858,
+      13.36834
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040931E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.806833417969756,
+      107.73563767923042,
+      13.754625
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040213S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.823353253654204,
+      107.79808300500736,
+      13.754625
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040213E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -79.77947659092024,
+      182.11821318091825,
+      15.041698
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040212S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.90391913813073,
+      173.6683732504025,
+      15.912174
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040212E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -161.75213870510925,
+      92.58400516351685,
+      15.457659
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040912S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -161.67119838215876,
+      92.18044157139957,
+      15.442348
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040912E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.1755254927557,
+      71.13285874621943,
+      15.267569
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040114S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.11440370825585,
+      70.93433696171269,
+      15.266029
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040114E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.99482879106654,
+      41.76932084513828,
+      14.32069
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040908S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.98389493965078,
+      41.77403231617063,
+      14.321233
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040908E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.49772294965805,
+      45.27460361504927,
+      13.711575
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040102S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.4448949941434,
+      45.3021934479475,
+      13.700619
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040102E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.42291524761822,
+      48.66982295131311,
+      13.125975
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040951S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.41059357475024,
+      48.6708401045762,
+      13.12457
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040951E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.313783949939534,
+      50.834663892164826,
+      12.721519
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040117S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.2700033771107,
+      50.81555429846048,
+      12.710792
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040117E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.026554011157714,
+      52.2783365608193,
+      12.461815
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040955S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.7704669960076,
+      60.17478718562052,
+      13.000954
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040955E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.91358986956766,
+      54.47399119799957,
+      13.015373
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040107S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -50.96026257419726,
+      86.13449835078791,
+      13.453375
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040107E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.782083801634144,
+      60.19856434408575,
+      13.001233
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.92076271591941,
+      54.464860778767616,
+      13.016823
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.6779468486784,
+      50.82202025083825,
+      13.724378
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040906S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.77132578584133,
+      50.84024398168549,
+      13.724378
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040906E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -90.26089669181965,
+      58.794343046844006,
+      14.049781
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040104S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -90.31954257295001,
+      58.967234092764556,
+      14.050463
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040104E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -92.35376220464241,
+      74.15480603370816,
+      14.305395
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040918S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -92.42231817485299,
+      74.43021788354963,
+      14.305998
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040918E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -84.57856680557597,
+      86.61502042924985,
+      14.309792
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -84.48190492170397,
+      86.60977685591206,
+      14.311476
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -63.5919682092499,
+      89.27303442172706,
+      13.75415
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040929S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -63.550665533111896,
+      89.27955486020073,
+      13.755827
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040929E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -50.93155877280515,
+      86.05446050921455,
+      13.453375
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040927S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -53.62244431884028,
+      106.73294955678284,
+      13.741887
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040927E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -62.02593838452594,
+      101.91942701442167,
+      13.84465
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040201S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -62.183715919498354,
+      101.81645468762144,
+      13.849737
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040201E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -83.32900228991639,
+      98.89461758174002,
+      14.31194
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040919S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -83.40789121959824,
+      98.84313161112368,
+      14.31046
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040919E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -96.56337886257097,
+      106.6414097188972,
+      14.687478
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040203S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -96.60137292149011,
+      106.81756096985191,
+      14.695043
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040203E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -104.60817414574558,
+      142.4337211502716,
+      15.332945
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040916S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -112.14390916971024,
+      106.666825175751,
+      14.805351
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040916E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -119.50787444331218,
+      94.42387248110026,
+      14.796446
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040207S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -119.59685301373247,
+      94.40519959572703,
+      14.796446
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040207E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -144.32224755350035,
+      91.10802781535313,
+      15.216109
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040914S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -144.35991572286002,
+      91.09673661831766,
+      15.217226
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040914E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -155.45904335210798,
+      93.63597011193633,
+      15.391402
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040209S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -155.6184671538067,
+      93.76693145139143,
+      15.394156
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040209E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -148.91304412088357,
+      167.9501594537869,
+      15.955254
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC043209S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.26000412274152,
+      121.12869626795873,
+      15.758174
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC043209E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -162.57871933374554,
+      149.40076301107183,
+      16.125965
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040113S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.81740960443858,
+      74.37058490002528,
+      14.699448
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040113E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.13019394292496,
+      59.8540567131713,
+      14.392421
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040901S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.12854760681512,
+      59.62012479547411,
+      14.389212
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040901E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -110.41444593435153,
+      46.47932864166796,
+      14.395583
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040108S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -110.57718011847464,
+      46.42761757178232,
+      14.3974
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040108E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -153.0652325146948,
+      71.55438607512042,
+      15.232812
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040915S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -153.0640695760958,
+      71.75128498114645,
+      15.233446
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040915E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -145.69969052658416,
+      78.78315664082766,
+      15.176102
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040110S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -145.71125492919236,
+      78.7943417369388,
+      15.177159
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040110E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.45751298055984,
+      82.05232945922762,
+      14.859652
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040917S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.18904500297504,
+      82.09471053723246,
+      14.858296
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040917E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.80805663799401,
+      74.403071959503,
+      14.696655
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040210S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -116.94780207367148,
+      140.58651345828548,
+      15.159914
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040210E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -112.19883799925447,
+      106.80127109959722,
+      14.803375
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040206S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.60536105697975,
+      176.6061820210889,
+      15.04456
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040206E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -53.62764371489175,
+      106.77043657237664,
+      13.741887
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040313S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -104.60891227610409,
+      142.44135726662353,
+      15.333939
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040313E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.75339067890309,
+      156.14557084813714,
+      15.384046
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040304S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.6261747564422,
+      156.34780311165377,
+      15.383415
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040304E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -93.26182518864516,
+      169.2234578677453,
+      15.301611
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040314S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -93.214736795926,
+      169.38701949547976,
+      15.290648
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040314E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -81.70861674309708,
+      176.58988117286935,
+      15.045445
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040315S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -79.93497941660462,
+      182.100169419311,
+      15.044243
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040315E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -95.29595377825899,
+      186.36264027329162,
+      15.205655
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040306S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -95.42150689114351,
+      186.57701140874997,
+      15.212251
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040306E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -136.874110430188,
+      180.52751272823662,
+      15.79606
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040316S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -136.88237468583975,
+      180.39610160561278,
+      15.799708
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040316E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.76617363269906,
+      173.76167644001544,
+      15.91118
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040311S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -148.9244849057868,
+      168.1466288319789,
+      15.956956
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040311E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -135.56401174957864,
+      165.59530602861196,
+      15.731644
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040302S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -135.40864675922785,
+      165.4871731074527,
+      15.731835
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040302E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.32932847901247,
+      152.68689225660637,
+      15.349297
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040312S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.16259976522997,
+      152.5912573323585,
+      15.340376
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040312E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -116.96748869854491,
+      140.66093204682693,
+      15.158754
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040999S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      91.22531818796415,
+      -72.55014219041914,
+      -0.070715
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040999E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      105.59475176420528,
+      19.69205360673368,
+      7.129528
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041999S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      105.61044682638021,
+      19.746574472635984,
+      7.129553
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041999E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      111.2350584679516,
+      29.66406499221921,
+      8.248399
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC042999S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      111.3440976855345,
+      29.837409547530115,
+      8.2673
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC042999E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.2877789834747,
+      62.847005602438,
+      10.495664
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040998S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      136.20659669628367,
+      64.57232695259154,
+      10.5177
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040998E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.51773551956285,
+      27.51074545038864,
+      7.714902
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041998S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.34939632506575,
+      27.444220118690282,
+      7.703922
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041998E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      86.8986247399589,
+      -73.6723994561471,
+      0.004123
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC049999S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      95.7745434701792,
+      -72.38686158508062,
+      -0.156063
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC049999E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      141.80229214357678,
+      60.69393329648301,
+      10.5023
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC004116S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.315424681582954,
+      55.049542017281055,
+      12.483484
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC004116E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.37796330451965,
+      53.667363175190985,
+      12.741434
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041101S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.81865953159286,
+      51.838899965863675,
+      13.059422
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041101E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.47296195093077,
+      47.93123283330351,
+      13.720244
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041108S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -108.23476474947529,
+      43.95551329664886,
+      14.332034
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041108E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -156.14988835778786,
+      71.49988938588649,
+      15.279533
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041209S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.02886775269872,
+      92.17470867792144,
+      15.453057
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041209E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -149.13039387523895,
+      171.07292884029448,
+      15.940429
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041206S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -79.1973831053474,
+      179.45835268683732,
+      15.03314
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041206E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -50.40621340984944,
+      107.18865732336417,
+      13.752931
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041107S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -48.03418311715359,
+      86.12155280308798,
+      13.408727
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041107E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -44.998066178988665,
+      60.78770333295688,
+      12.988471
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041106S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -85.54336584440898,
+      92.84637275896966,
+      14.294328
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041106E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -64.67231635662029,
+      95.56878068484366,
+      13.88968
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041111S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.293027742533,
+      84.92159339692444,
+      15.244431
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041111E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -121.02897773380391,
+      88.18120895046741,
+      14.851733
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041211S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -110.39302482607309,
+      141.69468883052468,
+      15.255952
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041211E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.10174445027951,
+      107.71174253430218,
+      14.877791
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041113S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.00533164513763,
+      75.3113531912677,
+      14.42677
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041113E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -100.1454199727159,
+      60.40851986547932,
+      14.292765
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041110S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.03253474424127,
+      81.59130100766197,
+      15.204503
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041110E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.76743767998414,
+      85.04087947588414,
+      14.861392
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041207S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -118.8328530927538,
+      91.75096662109718,
+      14.806152
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041207E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -143.75069761031773,
+      88.41830133413896,
+      15.189477
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040913S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.47133411222603,
+      84.93860291922465,
+      15.246154
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040913E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -156.18391406547744,
+      71.67491718847305,
+      15.280473
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040911S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -158.86001512466464,
+      92.12716215057299,
+      15.447934
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040911E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -146.4230127709452,
+      84.87652855878696,
+      15.244431
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040912_1S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.03363110276405,
+      92.06870329007506,
+      15.452881
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040912_1E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -156.13659084925894,
+      71.55157179990783,
+      15.278744
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040903S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.46999006345868,
+      47.82665010308847,
+      13.719961
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040903E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -108.16163182782475,
+      43.967058318667114,
+      14.329358
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040907S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -108.16982248768909,
+      43.97498022392392,
+      14.330695
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040907E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -100.10415122029372,
+      60.37334756273776,
+      14.292765
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040902S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -100.15297190385172,
+      60.4047861630097,
+      14.295436
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040902E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.49184475606307,
+      47.919925353024155,
+      13.720244
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040993S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -85.71286952262744,
+      92.85106170829386,
+      14.297072
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040993E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.05317510099849,
+      75.49706238415092,
+      14.427099
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040994S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.10659581597429,
+      107.74147719936445,
+      14.878386
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040994E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -85.62039572361391,
+      92.84955600928515,
+      14.296198
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040991S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -121.01787817454897,
+      88.21657208912075,
+      14.851606
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040991E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.1180560728535,
+      107.68060644902289,
+      14.876459
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040992S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -101.98218916694168,
+      75.31204478349537,
+      14.420146
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040992E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -118.41720639134292,
+      88.49597446713597,
+      14.824334
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041201S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -61.71182688657427,
+      99.22349627595395,
+      13.794282
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041201E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.57065754383802,
+      96.29783917404711,
+      14.276284
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041105S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -85.21931451244745,
+      89.75692179985344,
+      14.250681
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC041105E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -64.27867097966373,
+      92.41359726339579,
+      13.846226
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040930S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -48.0010097680497,
+      86.18130802642554,
+      13.406274
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040930E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -64.50639184797183,
+      95.62903270777315,
+      13.88968
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040928S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -64.54925000446383,
+      95.64311263663694,
+      13.88968
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040928E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -50.38010619604029,
+      107.14864030107856,
+      13.752931
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040104_1S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -93.22691345354542,
+      58.41236838232726,
+      14.10015
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040104_1E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -95.26247150450945,
+      73.64769564755261,
+      14.270542
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040109S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -96.33623894746415,
+      57.9812392196618,
+      14.169333
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040109E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -98.41661057132296,
+      73.11023957608268,
+      14.277165
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040113_1S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -105.02418259799015,
+      74.82370298122987,
+      14.585378
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040113_1E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -103.37056379206479,
+      60.03245991142467,
+      14.361641
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040204S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -99.51582583307754,
+      106.15541623532772,
+      14.886608
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040204E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.75026098795934,
+      132.437206489034,
+      15.327465
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040205S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -102.54159710090607,
+      105.5623430176638,
+      14.856343
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040205E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.3430567465839,
+      141.45131243672222,
+      15.301533
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040211S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -113.72262315521948,
+      141.2875633733347,
+      15.203257
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040211E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -109.40498393407324,
+      107.44056333508343,
+      14.850602
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040956S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.77173617249355,
+      51.84975105570629,
+      13.06091
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040956E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -44.976545423967764,
+      60.751580907031894,
+      12.987485
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040953_1S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -44.97610988182714,
+      60.77833821484819,
+      12.987485
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040953_1E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.48100005381275,
+      53.6449706456624,
+      12.739492
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040952S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.77154715056531,
+      51.861362903378904,
+      13.058275
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040952E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.64270234166179,
+      53.99958483641967,
+      12.753003
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040301S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -96.09094911179272,
+      177.72789247520268,
+      15.347967
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040301E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -96.09720499510877,
+      177.67446552822366,
+      15.351895
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000001S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      139.47339825122617,
+      63.026241462212056,
+      10.468785
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000001E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      141.6224317473243,
+      60.64509467873722,
+      10.498575
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000002S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      151.87619086704217,
+      62.26518429769203,
+      10.184168
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000002E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      153.74670646112645,
+      64.68595860060304,
+      10.191612
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000003S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      138.059224641358,
+      76.33903964748606,
+      10.83783
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000003E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      135.97278866183478,
+      73.70440457342193,
+      10.784209
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000004S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -17.181821538426448,
+      65.73045296734199,
+      12.362958
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000004E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -20.043705176911317,
+      65.4926395448856,
+      12.399409
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000005S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -14.321185843087733,
+      46.742308450397104,
+      12.269807
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000005E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -11.630844815517776,
+      47.927561653312296,
+      12.238576
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000012S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.53651194786653,
+      55.00333968317136,
+      12.484021
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000012E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -24.29082853277214,
+      52.23157504852861,
+      12.464849
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000011S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.797723273630254,
+      56.51522449031472,
+      12.78106
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000011E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -35.492076252237894,
+      53.6607773876749,
+      12.741434
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000013S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.46933979762252,
+      47.82851321157068,
+      13.719961
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000013E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.53021355491364,
+      50.731362336315215,
+      13.740837
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000014S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.78108303982299,
+      51.84990320680663,
+      13.06091
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000014E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -52.433190678071696,
+      48.671271711587906,
+      13.124809
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000015S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -108.20463421655586,
+      43.951054899487644,
+      14.329358
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000015E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -107.99395561491838,
+      41.775603271089494,
+      14.321233
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000021S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -156.1165000346955,
+      71.44115627324209,
+      15.278502
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000021E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -153.01684980944265,
+      71.6355851716362,
+      15.232812
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000024S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -100.12191787303891,
+      60.2657630071044,
+      14.290754
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000024E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.12991130712908,
+      59.74120058957487,
+      14.392421
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000025S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -101.67647923104232,
+      73.00646827975288,
+      14.423419
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000025E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -92.28771839261753,
+      74.120031863451,
+      14.305395
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000022S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -143.59765649738256,
+      85.22396771842614,
+      15.182353
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000022E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -144.34167887317017,
+      91.07777601992711,
+      15.216109
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000023S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -121.02778346848208,
+      88.16026378655806,
+      14.851733
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000023E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -120.4130521286861,
+      81.95430845720693,
+      14.859652
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000026S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -82.72860298736487,
+      93.21115452283993,
+      14.238705
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000026E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -83.34571360505652,
+      98.82698037428781,
+      14.310702
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000027S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -64.31592030473985,
+      95.63430435676128,
+      13.88968
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000027E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -63.45546785509214,
+      89.33662110799924,
+      13.755827
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000028S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.932430033630226,
+      86.26426673866808,
+      13.408619
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000028E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -45.22068522719201,
+      86.32377743441612,
+      13.366505
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000017S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -45.088197698350996,
+      61.1004205821082,
+      12.99453
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000017E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -47.8303789452184,
+      60.741228397004306,
+      13.006831
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000029S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -50.326686557149515,
+      107.1911770068109,
+      13.752931
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000029E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -53.626992845442146,
+      107.07560991775244,
+      13.744821
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000031S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -159.05059523228556,
+      91.92576789995655,
+      15.452147
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000031E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -161.4809275874868,
+      91.87385697010905,
+      15.437848
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000032S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -106.14143354946282,
+      107.79320557741448,
+      14.877022
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000032E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -112.15723842952866,
+      106.84777027741075,
+      14.805367
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000033S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -110.30405360087752,
+      141.7515297322534,
+      15.258354
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000033E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -104.60970184067264,
+      142.4477412845008,
+      15.332943
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000034S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -149.12075698934495,
+      171.08450978947803,
+      15.939178
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000034E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -148.9657120599877,
+      167.84231353923678,
+      15.949369
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000035S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -79.14263106579892,
+      179.62342038331553,
+      15.03314
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC000035E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -79.58253602846526,
+      182.02357049193233,
+      15.035091
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040303S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -101.43282915733289,
+      175.30301742022857,
+      15.522768
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC040303E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      -101.43282915733289,
+      175.30301742022857,
+      15.522768
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001002S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      121.01888541749213,
+      -72.5941334348172,
+      -0.928205
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001002E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      101.77986397838686,
+      -74.61778798652813,
+      -0.319387
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001001S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.99992201547138,
+      -81.27202642988414,
+      -0.43035
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001001E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      122.0731648777728,
+      -78.58050874853507,
+      -0.871284
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001925S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      81.18013363378122,
+      -87.91575102461502,
+      0.105232
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001925E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.9748615694698,
+      -81.29488768801093,
+      -0.431668
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001003S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      124.0845146557549,
+      -80.84652044484392,
+      -0.845301
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001003E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      232.51157077593962,
+      -80.801449181512,
+      -1.838378
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001004S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      232.37233207025565,
+      -70.42556107416749,
+      -1.851625
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001004E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      124.08369553741068,
+      -68.94351957039908,
+      -0.910747
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001008S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      226.99470169923734,
+      -82.16585475439206,
+      -1.765069
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001008E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      129.0088167550275,
+      -81.56132004829124,
+      -1.040349
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001009S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      135.40682625200134,
+      -77.73659813497216,
+      -1.119323
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001009E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      169.58631742803846,
+      -78.11449782038108,
+      -1.558155
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001010S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      184.76251891453285,
+      -78.05079339304939,
+      -1.668269
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001010E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      223.27512658800697,
+      -78.72005535336211,
+      -1.756014
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001011S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      223.69909132295288,
+      -72.72510335221887,
+      -1.754794
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001011E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      184.24508613423677,
+      -72.60529880365357,
+      -1.539636
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001012S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      168.50888487242628,
+      -72.96830492652953,
+      -1.55854
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001012E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      134.9552868020255,
+      -72.73152258945629,
+      -1.144927
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001006S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      128.88227281079162,
+      -66.62293578172103,
+      -1.100491
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001006E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.3449967096094,
+      -68.94904260663316,
+      -1.594778
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001007S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      180.4505983182462,
+      -68.22104363283142,
+      -1.587064
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001007E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      226.52005630219355,
+      -68.26495077554137,
+      -1.775747
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001013S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.16028161428403,
+      -82.76687803305686,
+      -1.64329
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001013E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      177.70657538960222,
+      -98.16901223734021,
+      -1.501328
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001014S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      177.85891766485292,
+      -98.14495803695172,
+      -1.501501
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001014E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      180.63343370263465,
+      -83.11839557718486,
+      -1.634765
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001930S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      101.36873063107487,
+      -74.61471706908196,
+      -0.309234
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001930E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      95.82042972691124,
+      -72.41946491925046,
+      -0.157266
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001921S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      86.90386138943722,
+      -73.70820173993707,
+      0.00344
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001921E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      79.82449241366703,
+      -79.7438228726387,
+      0.203095
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011001S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.7589579753112,
+      -77.91910636425018,
+      -0.383368
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011001E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      121.96662532089977,
+      -75.41751882480457,
+      -0.866617
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011009S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      136.14330561901443,
+      -75.11514580622315,
+      -1.148593
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011009E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      170.26743492274545,
+      -75.45379415061325,
+      -1.396598
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011010S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      186.54987800261006,
+      -75.19729446340352,
+      -1.512207
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011010E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      224.10321855882648,
+      -75.41016298299655,
+      -1.759699
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011004S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      229.46546036395011,
+      -70.05026123858988,
+      -1.818507
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011004E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      126.05100205645431,
+      -68.30625656060874,
+      -0.980912
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011003S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      126.80866447021253,
+      -80.99293415434659,
+      -0.95755
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011003E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      229.2897773932782,
+      -77.61244786065072,
+      -1.80931
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011926S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      102.78590322076343,
+      -77.88672432443127,
+      -0.380951
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011926E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      80.3617451194441,
+      -83.83398476336151,
+      0.153925
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001931S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      124.0971472011297,
+      -68.96079832315445,
+      -0.913556
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001931E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      121.1306717399275,
+      -72.58138172142208,
+      -0.924901
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001932S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      134.95918654848356,
+      -72.65278371516615,
+      -1.143859
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001932E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      128.896363062202,
+      -66.64103479497135,
+      -1.103044
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001933S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      128.99881182279205,
+      -81.55670124059543,
+      -1.040349
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001933E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      135.34803683811333,
+      -77.75051758997142,
+      -1.118084
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001934S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      122.0659962198697,
+      -78.59572065947577,
+      -0.871284
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001934E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      124.07483885105466,
+      -80.83531156554818,
+      -0.841737
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001940S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      169.61285216949182,
+      -78.12909162882715,
+      -1.558155
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001940E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.1541873489041,
+      -82.70385574363172,
+      -1.64329
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001941S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      180.60927432158496,
+      -83.0735854478553,
+      -1.634847
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001941E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      184.7480505715357,
+      -78.03868272900581,
+      -1.668269
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001942S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      184.21439360803925,
+      -72.58628497179598,
+      -1.539636
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001942E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      180.40901877987199,
+      -68.18315909476951,
+      -1.587064
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001943S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      175.35577462957008,
+      -69.00447150319815,
+      -1.594637
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001943E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      168.5880343617755,
+      -72.97776952013373,
+      -1.553403
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011007S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      177.89438124303706,
+      -68.12928284564987,
+      -1.592544
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC011007E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      178.08852929715067,
+      -53.33551525976509,
+      -1.631119
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC111007S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      178.0808061218122,
+      -53.305525014176965,
+      -1.62992
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC111007E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      181.9504283205024,
+      -49.24160555191338,
+      -1.603365
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001006_1S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      173.5487155400915,
+      -49.24496193090454,
+      -1.537931
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001006_1E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      178.08055359357968,
+      -53.321064425166696,
+      -1.62992
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001954S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      226.52246050385293,
+      -68.27221100963652,
+      -1.777095
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001954E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      223.75704939907882,
+      -72.69923998508602,
+      -1.755263
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001951S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      223.2791316602379,
+      -78.70967086218297,
+      -1.756117
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001951E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      226.9965688046068,
+      -82.17001361073926,
+      -1.765069
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001952S",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      232.48154469497968,
+      -80.67422212660313,
+      -1.839135
+    ],
+    "on_stop_line": false
+  },
+  {
+    "idx": "RB222CC001952E",
+    "node_type": null,
+    "junction": [],
+    "point": [
+      232.40724488080014,
+      -70.57638727826998,
+      -1.851532
+    ],
+    "on_stop_line": false
+  }
+]

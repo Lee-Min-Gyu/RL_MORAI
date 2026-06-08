@@ -1,0 +1,84 @@
+[
+  {
+    "idx": "CW000000",
+    "single_crosswalk_list": [
+      "B322CC010001"
+    ],
+    "ref_traffic_light_list": []
+  },
+  {
+    "idx": "CW000001",
+    "single_crosswalk_list": [
+      "B322CC010002"
+    ],
+    "ref_traffic_light_list": []
+  },
+  {
+    "idx": "CW000002",
+    "single_crosswalk_list": [
+      "B322CC010003"
+    ],
+    "ref_traffic_light_list": []
+  },
+  {
+    "idx": "CW000003",
+    "single_crosswalk_list": [
+      "B322CC010006"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001013",
+      "C122CC001012"
+    ]
+  },
+  {
+    "idx": "CW000004",
+    "single_crosswalk_list": [
+      "B322CC010007"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001014",
+      "C122CC001015"
+    ]
+  },
+  {
+    "idx": "CW000005",
+    "single_crosswalk_list": [
+      "B322CC010005"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001011",
+      "C122CC001017"
+    ]
+  },
+  {
+    "idx": "CW000006",
+    "single_crosswalk_list": [
+      "B322CC010008"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001018",
+      "C122CC001016"
+    ]
+  },
+  {
+    "idx": "CW000007",
+    "single_crosswalk_list": [
+      "B322CC010009"
+    ],
+    "ref_traffic_light_list": []
+  },
+  {
+    "idx": "CW000008",
+    "single_crosswalk_list": [
+      "B322CC010004"
+    ],
+    "ref_traffic_light_list": []
+  },
+  {
+    "idx": "CW000009",
+    "single_crosswalk_list": [
+      "B322CC010010"
+    ],
+    "ref_traffic_light_list": []
+  }
+]

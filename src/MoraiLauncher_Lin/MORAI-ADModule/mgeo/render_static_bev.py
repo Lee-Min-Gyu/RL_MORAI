@@ -14,7 +14,7 @@ from shapely.geometry import LineString, Polygon, MultiPolygon, GeometryCollecti
 from shapely.ops import unary_union
 
 
-DEFAULT_LINK_WIDTH_M = 3.5
+DEFAULT_LINK_WIDTH_M = 3.8
 DEFAULT_LANE_MARKING_WIDTH_M = 0.15
 
 
@@ -327,7 +327,7 @@ def extract_lane_marking_width_m(lane_marking):
     return float(lane_marking.get("lane_width") or DEFAULT_LANE_MARKING_WIDTH_M)
 
 
-def collect_link_polygons(link_set, resample_spacing_m=0.25, width_margin_m=0.15):
+def collect_link_polygons(link_set, resample_spacing_m=0.25, width_margin_m=0.35):
     polygons = []
 
     for link in link_set:
@@ -558,7 +558,7 @@ def render_static_bev(
     supersample=4,
     link_resample_spacing_m=0.25,
     lane_resample_spacing_m=0.15,
-    link_width_margin_m=0.15,
+    link_width_margin_m=0.35,
     fill_group_bridge_distance_m=2.0,
     drivable_closing_kernel_px=3,
     drivable_closing_iterations=1,
@@ -802,7 +802,7 @@ def parse_args():
     parser.add_argument(
         "--lane-resample-spacing",
         type=float,
-        default=0.15,
+        default=0.35,
         help="Resampling interval in meters for lane marking polylines.",
     )
     parser.add_argument(

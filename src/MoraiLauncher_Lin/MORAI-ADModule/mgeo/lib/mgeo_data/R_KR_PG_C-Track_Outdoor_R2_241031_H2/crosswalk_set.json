@@ -1,0 +1,42 @@
+[
+  {
+    "idx": "CW000000",
+    "single_crosswalk_list": [
+      "B322CC010006"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001013",
+      "C122CC001012"
+    ]
+  },
+  {
+    "idx": "CW000001",
+    "single_crosswalk_list": [
+      "B322CC010007"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001014",
+      "C122CC001015"
+    ]
+  },
+  {
+    "idx": "CW000002",
+    "single_crosswalk_list": [
+      "B322CC010005"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001011",
+      "C122CC001017"
+    ]
+  },
+  {
+    "idx": "CW000003",
+    "single_crosswalk_list": [
+      "B322CC010008"
+    ],
+    "ref_traffic_light_list": [
+      "C122CC001018",
+      "C122CC001016"
+    ]
+  }
+]

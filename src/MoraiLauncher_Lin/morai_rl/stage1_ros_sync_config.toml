@@ -82,12 +82,12 @@ max_reset_attempts = 3
 reset_retry_wait_sec = 10.0
 
 [path]
-csv_path = "../output/reference_path_centerline.csv"
+csv_path = "../output/reference_path_centerline_kcity_2025.csv"
 
 [route]
 enabled = true
-link_set_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PG_K-City/link_set.json"
-corridor_selection_path = "../output/selected_links.json"
+link_set_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PR_K-City_2025/link_set.json"
+corridor_selection_path = "../output/selected_links_2025_kcity.json"
 corridor_selection_key = "selected_link_ids"
 corridor_margin_m = 0.5
 
@@ -105,15 +105,15 @@ rear_range_m = 8.0
 left_range_m = 19.2
 right_range_m = 19.2
 include_lane_marking = false
-static_bev_npz_path = "../output/kcity_selected_links_bev/static_bev.npz"
-static_bev_metadata_path = "../output/kcity_selected_links_bev/static_bev_metadata.json"
-lane_marking_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PG_K-City/lane_marking_set.json"
-corridor_boundary_width_m = 0.3
+static_bev_npz_path = "../output/kcity_2025_selected_links_bev/static_bev.npz"
+static_bev_metadata_path = "../output/kcity_2025_selected_links_bev/static_bev_metadata.json"
+lane_marking_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PR_K-City_2025/lane_marking_set.json"
+corridor_boundary_width_m = 0.2
 centerline_width_m = 0.3
 lane_marking_min_width_m = 0.15
 ego_vehicle_length_m = 4.845
 ego_vehicle_width_m = 1.835
-ego_vehicle_offset_forward_m = 0.0
+ego_vehicle_offset_forward_m = 1.3375
 
 [recovery]
 enabled = true

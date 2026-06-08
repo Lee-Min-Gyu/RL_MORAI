@@ -1,0 +1,29 @@
+{
+  "saved_utc_time": "2026-01-13 05:47:21.987283",
+  "mgeo_file_hash": "{'crosswalk_set.json': '416081af11d03725a5dd382f9848cef9c63ac87703d5623d6470f868af68c04b', 'intersection_controller_data.json': 'f16a4c0e8ff9afbc16356c7b5c4e20f4ef9b5ca4943ddc8ce91f25900cba3ee9', 'intersection_controller_set.json': '12b497d4910e8daaebd06cfc92f15fd1723ce37eda7ec79648a91f473f54bd8c', 'junction_group_set.json': '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945', 'junction_set.json': '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945', 'lane_boundary_set.json': '67b2272b7d559ee93e74554af842bfd1211be211ef80ba97ee886099556d664b', 'lane_node_set.json': '4a62ffe213343610ecbfae63d9d1eaca14cf119461c5793d2bba7bd2af8079fa', 'link_set.json': '804f16089ba3b6ea4fda7ac207ceb1af0aae2e9b272834e0be5140e864a79d57', 'node_set.json': 'baafc1acbb4a34eadcafe6136f2b3ac330cebf0cf5727a324c4f117a54eba7dc', 'object_set.json': 'b5955efe4136239683ae3dfb55caeda9a149f5f80af44b0b62e86371c774be6e', 'parking_space_set.json': 'd31405670ebf7ec84668412a6ce90f9cd102d0cda602072b940ee633df4dc3b1', 'road_polygon_set.json': '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945', 'road_set.json': '9b4dbf427e3529d60c7778c01c240f107cfdb47a18b75c0ac1d889f6fa477f13', 'singlecrosswalk_set.json': 'cb7415dce129609bdaf65e8d7fc6d6049840778cd01554886b562ea63f96393b', 'surface_marking_set.json': '12996e631dc40574d3a6bd5695ccc9af9ecf1efeee8b88d2b0437ac9529e4691', 'synced_traffic_light_set.json': 'b719aa9f0dbf8ecf405439975b17f795d05604c5f26b0520b960af227cc50e41', 'traffic_light_set.json': '66de0cbacd35dbd454a260fe491f1e25d9145fc69b594aca14041863cb597ba7', 'traffic_sign_set.json': 'de7ac76a60f15b99d3f26aeba303cce6a593bb80eabb607761e2b826189d9cd4'}",
+  "maj_ver": 3,
+  "min_ver": 1,
+  "global_coordinate_system": "+proj=utm +zone=52 +datum=WGS84 +units=m +no_defs",
+  "workspace_coordinate_system": "+proj=utm +zone=52 +datum=WGS84 +units=m +no_defs",
+  "local_origin_in_global": [
+    302595.0,
+    4124145.0,
+    0.0
+  ],
+  "workspace_origin": [
+    -339.0,
+    -234.0,
+    -283.0
+  ],
+  "lane_change_link_included": true,
+  "traffic_dir": "",
+  "country": "",
+  "road_type": "",
+  "road_type_def": "",
+  "data_source": "웨이즈원",
+  "east_grids": [],
+  "west_grids": [],
+  "south_grids": [],
+  "north_grids": [],
+  "license": "MORAI"
+}
