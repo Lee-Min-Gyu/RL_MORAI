@@ -1,6 +1,6 @@
 {
   "map_name": "R_KR_PG_K-City",
-  "generated_at_utc": "2026-06-07T13:11:22.414161+00:00",
+  "generated_at_utc": "2026-06-08T10:37:44.404568+00:00",
   "image_size": {
     "width_px": 1319,
     "height_px": 4599
@@ -409,7 +409,7 @@
   "rendering_options": {
     "include_lane_marking": false,
     "link_resample_spacing_m": 0.25,
-    "lane_resample_spacing_m": 0.15,
+    "lane_resample_spacing_m": 0.35,
     "link_width_margin_m": 0.15,
     "fill_group_bridge_distance_m": 4.5,
     "drivable_closing_kernel_px": 3,
