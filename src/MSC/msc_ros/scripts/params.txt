@@ -5,8 +5,8 @@ request_dst_port : 10508
 user_id : khkim
 user_pw : misys1009!
 version : v.R1.260413.0
-map : R_KR_PG_K-City
+map : R_KR_PR_K-city_2025
 vehicle : 2015_Kia_K5
 network_file : Sim
-Sensor_file :  
+Sensor_file : IMU
 Scenario_file :
