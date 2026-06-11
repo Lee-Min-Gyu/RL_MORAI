@@ -98,7 +98,7 @@ corridor_margin_m = 0.5
 [observation]
 mode = "hybrid"
 vector_profile = "racing_guide"
-lookahead_distances_m = [5.0, 10.0, 15.0]
+lookahead_distances_m = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
 guide_dropout_prob = 0.0
 
 [bev]
