@@ -41,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
+    parser.add_argument("--action-log-freq", type=int, default=0)
     parser.add_argument("--max-restarts", type=int, default=3)
     parser.add_argument("--restart-wait-sec", type=float, default=2.0)
     parser.add_argument("--runtime-recovery", action="store_true")
@@ -87,6 +88,7 @@ def main() -> None:
     obs, _info = env.reset()
     episode_start = True
     episode_tracker = _new_episode_tracker()
+    action_stats = _ActionStats(args.worker_id, log_freq=args.action_log_freq)
 
     try:
         while True:
@@ -118,6 +120,7 @@ def main() -> None:
                         initial_obs=obs,
                         initial_episode_start=episode_start,
                         episode_tracker=episode_tracker,
+                        action_stats=action_stats,
                         rollout_steps=args.rollout_steps,
                     )
                     break
@@ -144,6 +147,7 @@ def main() -> None:
                     obs, _info = env.reset()
                     episode_start = True
                     episode_tracker = _new_episode_tracker()
+                    action_stats = _ActionStats(args.worker_id, log_freq=args.action_log_freq)
             send_message(
                 sock,
                 {
@@ -199,6 +203,7 @@ def _collect_rollout(
     initial_obs,
     initial_episode_start: bool,
     episode_tracker: dict,
+    action_stats,
     rollout_steps: int,
 ) -> tuple[dict, object, bool]:
     model.policy.set_training_mode(False)
@@ -216,11 +221,12 @@ def _collect_rollout(
     episode_summaries = []
 
     for _ in range(int(rollout_steps)):
-        action, value, log_prob = _sample_action(model, obs)
+        action, value, log_prob, raw_mean, raw_std = _sample_action(model, obs)
         clipped_action = np.clip(action, env.action_space.low, env.action_space.high)
         next_obs, reward, terminated, truncated, info = env.step(clipped_action)
         done = bool(terminated or truncated)
         _update_episode_tracker(episode_tracker, reward, info)
+        action_stats.add(raw_mean, raw_std, action, clipped_action)
 
         observations.append(_copy_observation(obs))
         actions.append(np.asarray(action, dtype=np.float32))
@@ -266,11 +272,31 @@ def _collect_rollout(
 def _sample_action(model, obs):
     with th.no_grad():
         obs_tensor, _ = model.policy.obs_to_tensor(obs)
+        raw_mean, raw_std = _raw_action_params(model, obs_tensor)
         actions_tensor, values_tensor, log_probs_tensor = model.policy(obs_tensor)
     action = actions_tensor.detach().cpu().numpy().reshape(-1)
     value = values_tensor.detach().cpu().numpy().reshape(-1)[0]
     log_prob = log_probs_tensor.detach().cpu().numpy().reshape(-1)[0]
-    return action, value, log_prob
+    return action, value, log_prob, raw_mean, raw_std
+
+
+def _raw_action_params(model, obs_tensor):
+    policy = model.policy
+    if hasattr(policy, "raw_action_params"):
+        raw_mean, raw_std = policy.raw_action_params(obs_tensor)
+    else:
+        features = policy.extract_features(obs_tensor)
+        if policy.share_features_extractor:
+            latent_pi, _ = policy.mlp_extractor(features)
+        else:
+            pi_features, _ = features
+            latent_pi = policy.mlp_extractor.forward_actor(pi_features)
+        raw_mean = policy.action_net(latent_pi)
+        log_std = getattr(policy, "log_std", None)
+        if log_std is None:
+            return None, None
+        raw_std = th.ones_like(raw_mean) * log_std.exp()
+    return raw_mean.detach().cpu().numpy().reshape(-1), raw_std.detach().cpu().numpy().reshape(-1)
 
 
 def _predict_value(model, obs) -> float:
@@ -278,6 +304,77 @@ def _predict_value(model, obs) -> float:
         obs_tensor, _ = model.policy.obs_to_tensor(obs)
         value = model.policy.predict_values(obs_tensor)
     return float(value.detach().cpu().numpy().reshape(-1)[0])
+
+
+class _ActionStats:
+    def __init__(self, worker_id: str, log_freq: int = 0) -> None:
+        self.worker_id = str(worker_id)
+        self.log_freq = max(0, int(log_freq))
+        self.total_steps = 0
+        self._raw_means: list[np.ndarray] = []
+        self._raw_stds: list[np.ndarray] = []
+        self._actions: list[np.ndarray] = []
+        self._env_actions: list[np.ndarray] = []
+
+    def add(self, raw_mean, raw_std, action, env_action) -> None:
+        if self.log_freq <= 0:
+            return
+        self.total_steps += 1
+        action_array = np.asarray(action, dtype=np.float32).reshape(-1)
+        env_action_array = np.asarray(env_action, dtype=np.float32).reshape(-1)
+        self._actions.append(action_array.copy())
+        self._env_actions.append(env_action_array.copy())
+        if raw_mean is not None and raw_std is not None:
+            self._raw_means.append(np.asarray(raw_mean, dtype=np.float32).reshape(-1).copy())
+            self._raw_stds.append(np.asarray(raw_std, dtype=np.float32).reshape(-1).copy())
+        if self.total_steps % self.log_freq == 0:
+            self._print_and_clear()
+
+    def _print_and_clear(self) -> None:
+        if not self._actions:
+            return
+        actions = np.stack(self._actions)
+        env_actions = np.stack(self._env_actions)
+        raw_mean = np.stack(self._raw_means) if self._raw_means else actions
+        raw_std = np.stack(self._raw_stds) if self._raw_stds else np.zeros_like(actions)
+        self._raw_means.clear()
+        self._raw_stds.clear()
+        self._actions.clear()
+        self._env_actions.clear()
+        if actions.shape[1] < 2:
+            return
+        accel_index = 0
+        steer_index = 1
+        steer_action = env_actions[:, steer_index]
+        steer_clip_ratio = float(np.mean(np.abs(actions[:, steer_index] - steer_action) > 1e-6))
+        steer_saturation_ratio = float(np.mean(np.abs(steer_action) > 0.999))
+        print(
+            "worker_action_stats "
+            f"worker_id={self.worker_id} total_steps={self.total_steps} "
+            f"raw_steer_mean={float(np.mean(raw_mean[:, steer_index])):+.3f} "
+            f"raw_steer_std={float(np.mean(raw_std[:, steer_index])):.3f} "
+            f"squashed_steer_mean={float(np.mean(steer_action)):+.3f} "
+            f"squashed_steer_min={float(np.min(steer_action)):+.3f} "
+            f"squashed_steer_max={float(np.max(steer_action)):+.3f} "
+            f"steering_saturation_ratio={steer_saturation_ratio:.3f} "
+            f"clip_ratio={steer_clip_ratio:.3f}",
+            flush=True,
+        )
+        accel_action = env_actions[:, accel_index]
+        accel_clip_ratio = float(np.mean(np.abs(actions[:, accel_index] - accel_action) > 1e-6))
+        accel_saturation_ratio = float(np.mean(np.abs(accel_action) > 0.999))
+        print(
+            "worker_action_stats "
+            f"worker_id={self.worker_id} total_steps={self.total_steps} "
+            f"raw_accel_brake_mean={float(np.mean(raw_mean[:, accel_index])):+.3f} "
+            f"raw_accel_brake_std={float(np.mean(raw_std[:, accel_index])):.3f} "
+            f"squashed_accel_brake_mean={float(np.mean(accel_action)):+.3f} "
+            f"squashed_accel_brake_min={float(np.min(accel_action)):+.3f} "
+            f"squashed_accel_brake_max={float(np.max(accel_action)):+.3f} "
+            f"accel_brake_saturation_ratio={accel_saturation_ratio:.3f} "
+            f"accel_brake_clip_ratio={accel_clip_ratio:.3f}",
+            flush=True,
+        )
 
 
 def _copy_observation(obs):
