@@ -24,7 +24,7 @@ from morai_rl.scripts.train_ppo import (
     _runtime_recovery_options,
 )
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml.toml"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
 
 
 def parse_args() -> argparse.Namespace:
