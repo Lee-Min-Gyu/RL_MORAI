@@ -52,7 +52,7 @@ no_progress_window_steps = 200
 no_progress_epsilon_m = 0.5
 reverse_progress_window_steps = 10
 reverse_progress_threshold_m = -0.5
-stalled_penalty = 1000.0
+stalled_penalty = 1500.0
 state_timeout_penalty = 20.0
 
 [reset]
