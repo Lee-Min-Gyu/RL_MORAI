@@ -11,6 +11,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - optional runtime dependency
     pygame = None
 
+from morai_rl.envs.observation import build_observation
 from morai_rl.envs.morai_env import MoraiRLEnv
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
@@ -60,6 +61,34 @@ def main() -> None:
             last_progress = progress
             corridor_distance = corridor.corridor_distance_m if corridor is not None else projection.distance_m
             inside = corridor.inside if corridor is not None else projection.distance_m <= env.config.env.off_track_distance_m
+            projection_off_track = not inside
+            observation = build_observation(
+                state=state,
+                projection=projection,
+                corridor_projection=corridor,
+                previous_action=env.previous_action,
+                target_speed_mps=env.config.env.target_speed_mps,
+                episode_progress_m=progress - first_progress,
+                progress_delta_m=delta,
+                observation_mode=env.config.observation.mode,
+                bev_renderer=env.local_bev_renderer,
+                vector_profile=env.config.observation.vector_profile,
+                guide_dropout_prob=env.config.observation.guide_dropout_prob,
+                lookahead_distances_m=env.config.observation.lookahead_distances_m,
+                reference_path=env.reference_path,
+            )
+            bev_contact = env._compute_bev_contact_metrics(observation)
+            footprint_off_track = bool(bev_contact["available"]) and int(bev_contact["outside_pixels"]) > 0
+            boundary_overlap_off_track = (
+                bool(bev_contact["available"]) and int(bev_contact["boundary_overlap_pixels"]) > 0
+            )
+            off_track = footprint_off_track if bool(bev_contact["available"]) else projection_off_track
+            off_reasons = []
+            if footprint_off_track:
+                off_reasons.append("footprint")
+            elif not bool(bev_contact["available"]) and projection_off_track:
+                off_reasons.append("projection_fallback")
+            off_reason = ",".join(off_reasons) if off_reasons else "-"
             print(
                 "progress "
                 f"path={progress:8.2f}m "
@@ -72,11 +101,17 @@ def main() -> None:
                 f"head={projection.heading_error_rad:+6.3f}rad "
                 f"corridor={corridor_distance:+6.2f}m "
                 f"inside={'Y' if inside else 'N'} "
+                f"off_track={'Y' if off_track else 'N'} "
+                f"off_reason={off_reason} "
+                f"proj_out={'Y' if projection_off_track else 'N'} "
+                f"boundary_touch={'Y' if boundary_overlap_off_track else 'N'} "
+                f"bev_out={int(bev_contact['outside_pixels'])}px "
+                f"bev_boundary={int(bev_contact['boundary_overlap_pixels'])}px "
                 f"pos=({state.x:.2f},{state.y:.2f})",
                 flush=True,
             )
             if viewer is not None and env.local_bev_renderer is not None:
-                bev = env.local_bev_renderer.render(state)
+                bev = observation.bev
                 if not viewer.draw(bev, env.local_bev_renderer.channel_names):
                     viewer = None
             sleep_sec = period - (time.monotonic() - loop_start)

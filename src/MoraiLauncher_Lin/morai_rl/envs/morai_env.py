@@ -327,7 +327,7 @@ class MoraiRLEnv:
         boundary_overlap_off_track = (
             bool(bev_contact["available"]) and int(bev_contact["boundary_overlap_pixels"]) > 0
         )
-        off_track = projection_off_track or footprint_off_track or boundary_overlap_off_track
+        off_track = footprint_off_track if bool(bev_contact["available"]) else projection_off_track
 
         stalled = (
             len(self.recent_progress_deltas) >= self.config.env.no_progress_window_steps
@@ -401,6 +401,9 @@ class MoraiRLEnv:
             if observation.bev is not None
             else None,
             "bev_contact": bev_contact,
+            "projection_off_track": projection_off_track,
+            "footprint_off_track": footprint_off_track,
+            "boundary_overlap_off_track": boundary_overlap_off_track,
             "blocked_collision": blocked_collision,
             "termination_reason": reason,
         }
