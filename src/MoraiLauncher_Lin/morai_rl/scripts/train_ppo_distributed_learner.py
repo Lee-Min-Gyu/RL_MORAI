@@ -24,7 +24,7 @@ from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state,
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.distributed.rollout_buffer import fill_rollout_buffer
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "corner_case.toml"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml.toml"
 
 
 def parse_args() -> argparse.Namespace:
