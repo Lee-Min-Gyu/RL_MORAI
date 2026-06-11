@@ -164,6 +164,10 @@ class EnvConfig:
     heading_error_penalty_scale: float = 0.0
     heading_error_penalty_clip_rad: float = 1.0
     off_track_penalty: float = 100.0
+    lap_completion_enabled: bool = False
+    lap_complete_distance_m: float = 0.0
+    lap_completed_bonus: float = 0.0
+    timeout_penalty: float = 0.0
     done_stop_duration_sec: float = 0.5
     off_track_distance_m: float = 3.0
     stop_speed_threshold_mps: float = 0.3

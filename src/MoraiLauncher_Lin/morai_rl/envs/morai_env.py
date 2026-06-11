@@ -371,6 +371,23 @@ class MoraiRLEnv:
             reverse_progress=reverse_progress,
             stalled=stalled,
         )
+        lap_completed = (
+            bool(self.config.env.lap_completion_enabled)
+            and float(self.config.env.lap_complete_distance_m) > 0.0
+            and self.episode_progress_m >= float(self.config.env.lap_complete_distance_m)
+        )
+        if lap_completed and not terminated:
+            lap_completed_bonus = float(self.config.env.lap_completed_bonus)
+            reward += lap_completed_bonus
+            reward_terms["lap_completed_bonus"] = lap_completed_bonus
+            terminated = True
+            truncated = False
+            reason = "lap_completed"
+        elif truncated and reason == "max_steps":
+            timeout_penalty = self._compute_timeout_penalty()
+            if timeout_penalty > 0.0:
+                reward -= timeout_penalty
+                reward_terms["timeout_penalty"] = timeout_penalty
         self.previous_action = command
         self.last_state = state
         self.last_nearest_index = projection.nearest_index
@@ -404,6 +421,7 @@ class MoraiRLEnv:
             "projection_off_track": projection_off_track,
             "footprint_off_track": footprint_off_track,
             "boundary_overlap_off_track": boundary_overlap_off_track,
+            "lap_completed": lap_completed,
             "blocked_collision": blocked_collision,
             "termination_reason": reason,
         }
@@ -421,6 +439,19 @@ class MoraiRLEnv:
                 allow_create=True,
             )
         return observation.values, reward, terminated, truncated, info
+
+    def _compute_timeout_penalty(self) -> float:
+        timeout_penalty = float(self.config.env.timeout_penalty)
+        if timeout_penalty <= 0.0:
+            return 0.0
+        if not bool(self.config.env.lap_completion_enabled):
+            return timeout_penalty
+        lap_distance_m = float(self.config.env.lap_complete_distance_m)
+        if lap_distance_m <= 0.0:
+            return timeout_penalty
+        remaining_ratio = 1.0 - (self.episode_progress_m / lap_distance_m)
+        remaining_ratio = max(0.0, min(1.0, remaining_ratio))
+        return timeout_penalty * remaining_ratio
 
     def close(self) -> None:
         self._send_zero_for(duration_sec=0.1, allow_create=False)
