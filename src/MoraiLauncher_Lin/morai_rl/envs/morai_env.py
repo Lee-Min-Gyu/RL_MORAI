@@ -377,9 +377,11 @@ class MoraiRLEnv:
             and self.episode_progress_m >= float(self.config.env.lap_complete_distance_m)
         )
         if lap_completed and not terminated:
-            lap_completed_bonus = float(self.config.env.lap_completed_bonus)
+            lap_completed_bonus, lap_completed_step_bonus = self._compute_lap_completed_bonus()
             reward += lap_completed_bonus
             reward_terms["lap_completed_bonus"] = lap_completed_bonus
+            if lap_completed_step_bonus > 0.0:
+                reward_terms["lap_completed_step_bonus"] = lap_completed_step_bonus
             terminated = True
             truncated = False
             reason = "lap_completed"
@@ -452,6 +454,16 @@ class MoraiRLEnv:
         remaining_ratio = 1.0 - (self.episode_progress_m / lap_distance_m)
         remaining_ratio = max(0.0, min(1.0, remaining_ratio))
         return timeout_penalty * remaining_ratio
+
+    def _compute_lap_completed_bonus(self) -> tuple[float, float]:
+        base_bonus = float(self.config.env.lap_completed_bonus)
+        step_bonus_scale = float(self.config.env.lap_completed_step_bonus_scale)
+        if step_bonus_scale <= 0.0 or self.config.env.max_steps <= 0:
+            return base_bonus, 0.0
+        remaining_step_ratio = 1.0 - (float(self.step_count) / float(self.config.env.max_steps))
+        remaining_step_ratio = max(0.0, min(1.0, remaining_step_ratio))
+        step_bonus = step_bonus_scale * remaining_step_ratio
+        return base_bonus + step_bonus, step_bonus
 
     def close(self) -> None:
         self._send_zero_for(duration_sec=0.1, allow_create=False)

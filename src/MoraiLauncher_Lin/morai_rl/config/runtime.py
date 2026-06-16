@@ -167,6 +167,7 @@ class EnvConfig:
     lap_completion_enabled: bool = False
     lap_complete_distance_m: float = 0.0
     lap_completed_bonus: float = 0.0
+    lap_completed_step_bonus_scale: float = 0.0
     timeout_penalty: float = 0.0
     done_stop_duration_sec: float = 0.5
     off_track_distance_m: float = 3.0
