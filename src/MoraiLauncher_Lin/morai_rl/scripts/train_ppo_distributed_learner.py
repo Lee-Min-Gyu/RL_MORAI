@@ -23,6 +23,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional progress UI
 from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state, load_distributed_ppo
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.distributed.rollout_buffer import fill_rollout_buffer
+from morai_rl.core.episode_stats import ScenarioStatsAccumulator
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
 
@@ -49,8 +50,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
     parser.add_argument("--set-log-std", type=float, default=None)
-    parser.add_argument("--set-accel-brake-mean", type=float, default=None)
-    parser.add_argument("--set-accel-brake-std", type=float, default=None)
+    parser.add_argument("--set-throttle-brake-mean", type=float, default=None)
+    parser.add_argument("--set-throttle-brake-std", type=float, default=None)
     parser.add_argument("--set-steering-std", type=float, default=None)
     parser.add_argument("--resume-from", default="")
     parser.add_argument("--sb3-verbose", type=int, default=0)
@@ -202,7 +203,7 @@ def _action_net_row(model, index: int):
     return action_net, index
 
 
-def _set_accel_brake_mean(model, mean: float) -> None:
+def _set_throttle_brake_mean(model, mean: float) -> None:
     if th is None:
         raise ModuleNotFoundError("torch is required") from _TORCH_IMPORT_ERROR
     action_net, index = _action_net_row(model, 0)
@@ -214,7 +215,7 @@ def _set_accel_brake_mean(model, mean: float) -> None:
         after_bias = float(action_net.bias[index].detach().cpu().item())
         after_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
     print(
-        "set_accel_brake_mean "
+        "set_throttle_brake_mean "
         f"before_bias={before_bias:+.3f} before_weight_norm={before_weight_norm:.3f} "
         f"after_bias={after_bias:+.3f} after_weight_norm={after_weight_norm:.3f}",
         flush=True,
@@ -268,10 +269,10 @@ def _set_log_std(model, log_std_value: float) -> None:
 def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
     if args.set_log_std is not None:
         _set_log_std(model, float(args.set_log_std))
-    if args.set_accel_brake_mean is not None:
-        _set_accel_brake_mean(model, float(args.set_accel_brake_mean))
-    if args.set_accel_brake_std is not None:
-        _set_action_std(model, 0, float(args.set_accel_brake_std), "accel_brake")
+    if args.set_throttle_brake_mean is not None:
+        _set_throttle_brake_mean(model, float(args.set_throttle_brake_mean))
+    if args.set_throttle_brake_std is not None:
+        _set_action_std(model, 0, float(args.set_throttle_brake_std), "throttle_brake")
     if args.set_steering_std is not None:
         _set_action_std(model, 1, float(args.set_steering_std), "steering")
 
@@ -331,6 +332,10 @@ def _log_rollout_stats(rollouts: list[dict], policy_version: int) -> None:
         f"completed_episodes={len(episode_summaries)}",
         flush=True,
     )
+    scenario_stats = ScenarioStatsAccumulator()
+    for summary in episode_summaries:
+        scenario_stats.add(summary)
+    scenario_stats.print_summary(label=f"scenario_stats policy_version={policy_version}")
     for rollout in rollouts:
         summaries = [episode for episode in rollout.get("episode_summaries", []) if isinstance(episode, dict)]
         if not summaries:

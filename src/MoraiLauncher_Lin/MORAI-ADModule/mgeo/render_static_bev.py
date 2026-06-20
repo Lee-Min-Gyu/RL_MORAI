@@ -14,7 +14,7 @@ from shapely.geometry import LineString, Polygon, MultiPolygon, GeometryCollecti
 from shapely.ops import unary_union
 
 
-DEFAULT_LINK_WIDTH_M = 3.8
+DEFAULT_LINK_WIDTH_M = 3.5
 DEFAULT_LANE_MARKING_WIDTH_M = 0.15
 
 
@@ -737,6 +737,7 @@ def render_static_bev(
         ],
         "rendering_options": {
             "include_lane_marking": include_lane_marking,
+            "default_link_width_m": DEFAULT_LINK_WIDTH_M,
             "link_resample_spacing_m": link_resample_spacing_m,
             "lane_resample_spacing_m": lane_resample_spacing_m,
             "link_width_margin_m": link_width_margin_m,

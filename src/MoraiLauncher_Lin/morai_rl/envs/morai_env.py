@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+import math
 from pathlib import Path
 import time
 
@@ -65,6 +66,8 @@ class MoraiRLEnv:
             anonymous=config.ros.anonymous,
         )
         self.reference_path = ReferencePath.from_csv(config.path.csv_path)
+        if config.path.width_csv_path:
+            self.reference_path.attach_widths_from_csv(config.path.width_csv_path)
         self.route_corridor = None
         if config.route.enabled:
             self.route_corridor = RouteCorridor.from_files(
@@ -231,6 +234,7 @@ class MoraiRLEnv:
             guide_dropout_prob=self.config.observation.guide_dropout_prob,
             lookahead_distances_m=self.config.observation.lookahead_distances_m,
             reference_path=self.reference_path,
+            ego_vehicle_width_m=self.config.bev.ego_vehicle_width_m,
         )
         info = {
             "state": outcome.initial_state.to_dict(),
@@ -300,7 +304,7 @@ class MoraiRLEnv:
         self.recent_progress_deltas.append(progress_delta)
         self.episode_progress_m += progress_delta
         self.last_progress_delta_m = progress_delta
-        projection_off_track = (
+        pose_projection_off_track = (
             corridor_projection is not None and not corridor_projection.inside
         ) or (
             corridor_projection is None and projection.distance_m > self.config.env.off_track_distance_m
@@ -311,7 +315,7 @@ class MoraiRLEnv:
             state=state,
             projection=projection,
             corridor_projection=corridor_projection,
-            previous_action=self.previous_action,
+            previous_action=command,
             target_speed_mps=self.config.env.target_speed_mps,
             episode_progress_m=self.episode_progress_m,
             progress_delta_m=self.last_progress_delta_m,
@@ -321,13 +325,16 @@ class MoraiRLEnv:
             guide_dropout_prob=self.config.observation.guide_dropout_prob,
             lookahead_distances_m=self.config.observation.lookahead_distances_m,
             reference_path=self.reference_path,
+            ego_vehicle_width_m=self.config.bev.ego_vehicle_width_m,
         )
         bev_contact = self._compute_bev_contact_metrics(observation)
-        footprint_off_track = bool(bev_contact["available"]) and int(bev_contact["outside_pixels"]) > 0
+        bev_available = bool(bev_contact["available"])
+        footprint_off_track = bev_available and int(bev_contact["outside_pixels"]) > 0
         boundary_overlap_off_track = (
-            bool(bev_contact["available"]) and int(bev_contact["boundary_overlap_pixels"]) > 0
+            bev_available and int(bev_contact["boundary_overlap_pixels"]) > 0
         )
-        off_track = footprint_off_track if bool(bev_contact["available"]) else projection_off_track
+        projection_off_track = False if bev_available else pose_projection_off_track
+        off_track = footprint_off_track if bev_available else pose_projection_off_track
 
         stalled = (
             len(self.recent_progress_deltas) >= self.config.env.no_progress_window_steps
@@ -360,6 +367,11 @@ class MoraiRLEnv:
             heading_error_penalty_clip_rad=self.config.env.heading_error_penalty_clip_rad,
             boundary_proximity_penalty_scale=self.config.env.boundary_proximity_penalty_scale,
             boundary_proximity_margin_m=self.config.env.boundary_proximity_margin_m,
+            footprint_boundary_margin_m=(
+                float(bev_contact["footprint_boundary_margin_m"])
+                if bool(bev_contact["available"])
+                else None
+            ),
             off_track_penalty_value=self.config.env.off_track_penalty,
             stalled_penalty_value=self.config.env.stalled_penalty,
         )
@@ -544,6 +556,7 @@ class MoraiRLEnv:
                 guide_dropout_prob=self.config.observation.guide_dropout_prob,
                 lookahead_distances_m=self.config.observation.lookahead_distances_m,
                 reference_path=self.reference_path,
+                ego_vehicle_width_m=self.config.bev.ego_vehicle_width_m,
             )
             state_dict = self.last_state.to_dict()
             projection_dict = projection.to_dict()
@@ -607,6 +620,7 @@ class MoraiRLEnv:
                 guide_dropout_prob=self.config.observation.guide_dropout_prob,
                 lookahead_distances_m=self.config.observation.lookahead_distances_m,
                 reference_path=self.reference_path,
+                ego_vehicle_width_m=self.config.bev.ego_vehicle_width_m,
             )
             state_dict = None
             projection_dict = None
@@ -680,6 +694,7 @@ class MoraiRLEnv:
             "outside_pixels": 0,
             "boundary_overlap_ratio": 0.0,
             "outside_ratio": 0.0,
+            "footprint_boundary_margin_m": -1.0,
         }
         if observation.bev is None or self.local_bev_renderer is None:
             return metrics
@@ -704,6 +719,11 @@ class MoraiRLEnv:
         outside_pixels = int(
             np.count_nonzero((observation.bev[area_index] <= 0) & ego_mask)
         )
+        footprint_boundary_margin_m = self._compute_footprint_boundary_margin_m(
+            observation.bev[area_index] > 0,
+            ego_mask,
+            outside_pixels=outside_pixels,
+        )
         metrics.update(
             {
                 "available": True,
@@ -712,9 +732,61 @@ class MoraiRLEnv:
                 "outside_pixels": outside_pixels,
                 "boundary_overlap_ratio": boundary_overlap_pixels / float(ego_pixels),
                 "outside_ratio": outside_pixels / float(ego_pixels),
+                "footprint_boundary_margin_m": footprint_boundary_margin_m,
             }
         )
         return metrics
+
+    def _compute_footprint_boundary_margin_m(
+        self,
+        corridor_area_mask: np.ndarray,
+        ego_mask: np.ndarray,
+        *,
+        outside_pixels: int,
+    ) -> float:
+        if outside_pixels > 0:
+            return 0.0
+
+        margin_m = max(0.0, float(self.config.env.boundary_proximity_margin_m))
+        if margin_m <= 0.0:
+            return 0.0
+
+        height, width = corridor_area_mask.shape
+        x_resolution_m = (self.config.bev.front_range_m + self.config.bev.rear_range_m) / float(height)
+        y_resolution_m = (self.config.bev.left_range_m + self.config.bev.right_range_m) / float(width)
+        min_resolution_m = max(1e-6, min(x_resolution_m, y_resolution_m))
+        row_radius = int(math.ceil(margin_m / min_resolution_m))
+        col_radius = row_radius
+        outside_mask = ~corridor_area_mask
+
+        offsets: list[tuple[float, int, int]] = []
+        for row_offset in range(-row_radius, row_radius + 1):
+            for col_offset in range(-col_radius, col_radius + 1):
+                if row_offset == 0 and col_offset == 0:
+                    continue
+                distance_m = math.hypot(
+                    row_offset * x_resolution_m,
+                    col_offset * y_resolution_m,
+                )
+                if distance_m <= margin_m:
+                    offsets.append((distance_m, row_offset, col_offset))
+        offsets.sort(key=lambda item: item[0])
+
+        for distance_m, row_offset, col_offset in offsets:
+            ego_rows, outside_rows = self._offset_slices(height, row_offset)
+            ego_cols, outside_cols = self._offset_slices(width, col_offset)
+            if np.any(
+                ego_mask[ego_rows, ego_cols]
+                & outside_mask[outside_rows, outside_cols]
+            ):
+                return float(distance_m)
+        return margin_m
+
+    @staticmethod
+    def _offset_slices(size: int, offset: int) -> tuple[slice, slice]:
+        if offset >= 0:
+            return slice(0, size - offset), slice(offset, size)
+        return slice(-offset, size), slice(0, size + offset)
 
     def _detect_blocked_collision(
         self,
@@ -752,14 +824,14 @@ class MoraiRLEnv:
         if isinstance(action, ControlCommand):
             return action.clipped()
         if len(action) == 2:
-            accel_brake = float(action[0])
+            throttle_brake = float(action[0])
             return ControlCommand(
-                throttle=max(0.0, accel_brake),
-                brake=max(0.0, -accel_brake),
+                throttle=max(0.0, throttle_brake),
+                brake=max(0.0, -throttle_brake),
                 steering=float(action[1]),
             ).clipped()
         if len(action) != 3:
-            raise ValueError("action must be (accel_brake, steering) or (throttle, brake, steering)")
+            raise ValueError("action must be (throttle_brake, steering) or (throttle, brake, steering)")
         return ControlCommand(
             throttle=float(action[0]),
             brake=float(action[1]),

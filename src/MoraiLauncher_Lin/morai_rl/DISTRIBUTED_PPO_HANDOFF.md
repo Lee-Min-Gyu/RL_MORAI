@@ -179,10 +179,14 @@ ip route get 8.8.8.8
 현재 기본 config는 `morai_rl/stage1_ros_sync_config.toml`이다.
 
 - observation mode: `hybrid`
-- vector profile: `racing_guide`
+- vector profile: `racing_guide` 36D
+  - uses `longitudinal_speed_mps`, `lateral_speed_mps`, `steer_angle_norm`
+  - uses previous action as `previous_steering`, `previous_throttle_brake`
+  - uses current left/right boundary margin and track width
+  - uses 6 lookahead samples x `x/y/heading_error/track_width`
 - BeV: `192 x 192`
 - action: 2차원 `[-1, 1]`
-  - `[accel_brake, steering]`
+  - `[throttle_brake, steering]`
 
 worker rollout payload에는 다음 정보가 들어간다.
 

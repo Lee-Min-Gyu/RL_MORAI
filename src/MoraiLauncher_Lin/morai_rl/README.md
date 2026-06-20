@@ -11,7 +11,7 @@ MORAI Simulator를 ROS Noetic synchronous mode로 제어하며 Stable-Baselines3
 - Gymnasium wrapper + Stable-Baselines3 PPO 학습
 - ROACH-style `192x192` BeV observation
 - racing guide vector observation
-- action space: `[accel_brake, steering]`
+- action space: `[throttle_brake, steering]`
 - checkpoint 저장, resume, action 통계 출력
 - 시뮬레이터 무응답 `RuntimeError` 발생 시 자동 복구
 
@@ -105,11 +105,12 @@ rosservice list | grep -E "SyncMode|Scenario"
 
 - ROS sync mode enabled
 - `time_step = 20`
-- `step_hz = 50.0`
+- `step_hz = 25.0`
+- `action_repeat = 2`
 - reset mode: `/SyncModeScenarioLoad`
 - scenario round-robin: `ROS_RL`, `ROS_RL2`, `ROS_RL3`, `ROS_RL4`
 - BeV size: `192x192`
-- action mode: `accel_brake_steering`
+- action mode: `throttle_brake_steering`
 - recovery relaunch command: `roslaunch msc_ros msc_ros.launch`
 
 ## 진단 명령
@@ -171,8 +172,8 @@ python -m morai_rl.scripts.train_ppo \
   --n-steps 1024 \
   --batch-size 128 \
   --action-log-freq 1000 \
-  --set-accel-brake-mean 0.3 \
-  --set-accel-brake-std 0.2 \
+  --set-throttle-brake-mean 0.3 \
+  --set-throttle-brake-std 0.2 \
   --set-steering-std 0.15
 ```
 

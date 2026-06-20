@@ -165,12 +165,16 @@ If `/SyncModeScenarioLoad` is missing, reconnect MORAI network settings or resta
   - `front_range_m = 30.4`
   - `rear_range_m = 8.0`
   - ego is about 40 px above the bottom.
-- Vector profile is `racing_guide`; `target_speed_mps` is not part of that vector.
-- Action space is 2D: `[accel_brake, steering]`.
-  - `accel_brake > 0` maps to throttle.
-  - `accel_brake < 0` maps to brake.
+- Vector profile is `racing_guide`; current vector is 36D:
+  `longitudinal_speed_mps`, `lateral_speed_mps`, `yaw_rate_rps`, `steer_angle_norm`,
+  previous steering/throttle_brake control, path errors, corridor distance,
+  current left/right boundary margin, track width, and 6 lookahead points with track width.
+  `speed_mps` and `target_speed_mps` are not part of that vector.
+- Action space is 2D: `[throttle_brake, steering]`.
+  - `throttle_brake > 0` maps to throttle.
+  - `throttle_brake < 0` maps to brake.
   - `steering` maps directly to MORAI normalized front steer command.
-- Config currently uses `action_mode = "accel_brake_steering"`.
+- Config currently uses `action_mode = "throttle_brake_steering"`.
 
 ## Current Training Command
 
@@ -189,8 +193,8 @@ python -m morai_rl.scripts.train_ppo \
   --n-steps 1024 \
   --batch-size 128 \
   --action-log-freq 1000 \
-  --set-accel-brake-mean 0.3 \
-  --set-accel-brake-std 0.2 \
+  --set-throttle-brake-mean 0.3 \
+  --set-throttle-brake-std 0.2 \
   --set-steering-std 0.15
 ```
 
@@ -198,8 +202,8 @@ Expected early logs:
 
 ```text
 resuming_from=...
-set_accel_brake_mean ...
-set_accel_brake_std ...
+set_throttle_brake_mean ...
+set_throttle_brake_std ...
 set_steering_std ...
 training_budget target=2000000 completed=1010641 remaining=989359
 ```

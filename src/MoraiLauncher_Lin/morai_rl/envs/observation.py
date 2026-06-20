@@ -16,6 +16,12 @@ from morai_rl.maps.reference_path import ReferencePath
 from morai_rl.maps.route_corridor import CorridorProjection
 
 
+FRONT_STEER_ANGLE_MAX_DEG = 31.151662826538086
+LONGITUDINAL_SPEED_SCALE_MPS = 50.0
+LATERAL_SPEED_SCALE_MPS = 3.0
+YAW_RATE_SCALE_RPS = 1.5
+BOUNDARY_MARGIN_SCALE_M = 1.5
+
 LEGACY_VECTOR_OBSERVATION_KEYS = [
     "speed_mps",
     "target_speed_mps",
@@ -29,8 +35,7 @@ LEGACY_VECTOR_OBSERVATION_KEYS = [
     "lookahead_heading_error_10m",
     "lateral_error_m",
     "previous_steering",
-    "previous_throttle",
-    "previous_brake",
+    "previous_throttle_brake",
 ]
 
 PROPRIO_VECTOR_OBSERVATION_KEYS = [
@@ -39,27 +44,27 @@ PROPRIO_VECTOR_OBSERVATION_KEYS = [
     "yaw_rate_rps",
     "steer_angle",
     "previous_steering",
-    "previous_throttle",
-    "previous_brake",
+    "previous_throttle_brake",
 ]
 
 GUIDE_VECTOR_OBSERVATION_KEYS = [
     *PROPRIO_VECTOR_OBSERVATION_KEYS,
     "lateral_error_m",
     "heading_error_rad",
-    "corridor_distance_m",
 ]
 
 RACING_GUIDE_VECTOR_OBSERVATION_KEYS = [
-    "speed_mps",
+    "longitudinal_speed_mps",
+    "lateral_speed_mps",
     "yaw_rate_rps",
-    "steer_angle",
+    "steer_angle_norm",
     "previous_steering",
-    "previous_throttle",
-    "previous_brake",
+    "previous_throttle_brake",
     "lateral_error_m",
     "heading_error_rad",
-    "corridor_distance_m",
+    "left_boundary_margin_m",
+    "right_boundary_margin_m",
+    "track_width_m",
 ]
 
 VECTOR_OBSERVATION_KEYS = LEGACY_VECTOR_OBSERVATION_KEYS
@@ -81,6 +86,7 @@ def lookahead_observation_keys(lookahead_distances_m: list[float]) -> list[str]:
                 f"lookahead_{label}_x",
                 f"lookahead_{label}_y",
                 f"lookahead_{label}_heading_error",
+                f"lookahead_{label}_track_width_m",
             ]
         )
     return keys
@@ -114,7 +120,9 @@ def resolve_guide_observation_keys(
     return {
         "lateral_error_m",
         "heading_error_rad",
-        "corridor_distance_m",
+        "left_boundary_margin_m",
+        "right_boundary_margin_m",
+        "track_width_m",
         *lookahead_observation_keys(distances),
     }
 
@@ -132,6 +140,7 @@ def _add_lookahead_observations(
             named[f"lookahead_{label}_x"] = 0.0
             named[f"lookahead_{label}_y"] = 0.0
             named[f"lookahead_{label}_heading_error"] = 0.0
+            named[f"lookahead_{label}_track_width_m"] = 0.0
         return
 
     cos_yaw = math.cos(state.yaw_rad)
@@ -149,6 +158,7 @@ def _add_lookahead_observations(
         named[f"lookahead_{label}_heading_error"] = normalize_angle_rad(
             state.yaw_rad - target.yaw_rad
         )
+        named[f"lookahead_{label}_track_width_m"] = reference_path.track_width_at(target_index)
 
 
 def _vector_values_with_dropout(
@@ -167,6 +177,102 @@ def _vector_values_with_dropout(
     return vector_values
 
 
+def _normalize_vector_named(
+    named: dict[str, float],
+    reference_path: ReferencePath | None,
+    lookahead_distances_m: list[float],
+) -> dict[str, float]:
+    vector_named = dict(named)
+    vector_named["longitudinal_speed_mps"] = float(
+        np.clip(
+            float(named["longitudinal_speed_mps"]) / LONGITUDINAL_SPEED_SCALE_MPS,
+            0.0,
+            1.0,
+        )
+    )
+    vector_named["lateral_speed_mps"] = _clip_unit(
+        float(named["lateral_speed_mps"]) / LATERAL_SPEED_SCALE_MPS
+    )
+    vector_named["yaw_rate_rps"] = _clip_unit(
+        float(named["yaw_rate_rps"]) / YAW_RATE_SCALE_RPS
+    )
+    vector_named["heading_error_rad"] = _clip_unit(
+        float(named["heading_error_rad"]) / math.pi
+    )
+
+    track_width_m = max(0.0, float(named.get("track_width_m", 0.0)))
+    half_track_width_m = 0.5 * track_width_m
+    if half_track_width_m > 1e-6:
+        vector_named["lateral_error_m"] = _clip_unit(
+            float(named["lateral_error_m"]) / half_track_width_m
+        )
+    else:
+        vector_named["lateral_error_m"] = 0.0
+
+    for key in ("left_boundary_margin_m", "right_boundary_margin_m"):
+        vector_named[key] = float(
+            np.clip(
+                float(named.get(key, 0.0)) / BOUNDARY_MARGIN_SCALE_M,
+                0.0,
+                1.0,
+            )
+        )
+
+    max_track_width_m = (
+        reference_path.max_track_width_m()
+        if reference_path is not None
+        else 0.0
+    )
+    if max_track_width_m > 1e-6:
+        vector_named["track_width_m"] = float(
+            np.clip(track_width_m / max_track_width_m, 0.0, 1.0)
+        )
+    else:
+        vector_named["track_width_m"] = 0.0
+
+    for distance_m in lookahead_distances_m:
+        label = _lookahead_label(distance_m)
+        distance_scale_m = max(1e-6, float(distance_m))
+        lookahead_track_width_m = max(
+            0.0,
+            float(named.get(f"lookahead_{label}_track_width_m", 0.0)),
+        )
+        lookahead_half_width_m = 0.5 * lookahead_track_width_m
+        vector_named[f"lookahead_{label}_x"] = _clip_unit(
+            float(named[f"lookahead_{label}_x"]) / distance_scale_m
+        )
+        if lookahead_half_width_m > 1e-6:
+            vector_named[f"lookahead_{label}_y"] = _clip_unit(
+                float(named[f"lookahead_{label}_y"]) / lookahead_half_width_m
+            )
+        else:
+            vector_named[f"lookahead_{label}_y"] = 0.0
+        vector_named[f"lookahead_{label}_heading_error"] = _clip_unit(
+            float(named[f"lookahead_{label}_heading_error"]) / math.pi
+        )
+        if max_track_width_m > 1e-6:
+            vector_named[f"lookahead_{label}_track_width_m"] = float(
+                np.clip(lookahead_track_width_m / max_track_width_m, 0.0, 1.0)
+            )
+        else:
+            vector_named[f"lookahead_{label}_track_width_m"] = 0.0
+    return vector_named
+
+
+def _clip_unit(value: float) -> float:
+    return float(np.clip(float(value), -1.0, 1.0))
+
+
+def normalize_front_steer_angle(front_steer_angle_deg: float) -> float:
+    return float(
+        np.clip(
+            -float(front_steer_angle_deg) / FRONT_STEER_ANGLE_MAX_DEG,
+            -1.0,
+            1.0,
+        )
+    )
+
+
 def build_observation(
     state: VehicleState,
     projection: PathProjection,
@@ -181,6 +287,7 @@ def build_observation(
     guide_dropout_prob: float = 0.0,
     lookahead_distances_m: list[float] | None = None,
     reference_path: ReferencePath | None = None,
+    ego_vehicle_width_m: float = 0.0,
 ) -> Observation:
     distances = [5.0, 10.0] if lookahead_distances_m is None else list(lookahead_distances_m)
     corridor_distance_m = (
@@ -188,20 +295,44 @@ def build_observation(
         if corridor_projection is not None
         else float(projection.distance_m)
     )
+    vehicle_width_m = (
+        float(state.width_m)
+        if state.width_m is not None and state.width_m > 0.0
+        else float(ego_vehicle_width_m)
+    )
+    if reference_path is None:
+        left_boundary_margin_m = 0.0
+        right_boundary_margin_m = 0.0
+        track_width_m = 0.0
+    else:
+        left_boundary_margin_m, right_boundary_margin_m, track_width_m = (
+            reference_path.boundary_margins_at(
+                projection.nearest_index,
+                projection.lateral_error_m,
+                vehicle_width_m,
+            )
+        )
     named = {
         "speed_mps": state.speed_mps,
+        "longitudinal_speed_mps": state.vx,
+        "lateral_speed_mps": state.vy,
         "target_speed_mps": target_speed_mps,
         "yaw_rate_rps": state.wz,
         "steer_angle": state.steer_angle,
+        "steer_angle_norm": normalize_front_steer_angle(state.steer_angle),
         "progress_ratio": projection.progress_ratio,
         "episode_progress_m": episode_progress_m,
         "progress_delta_m": progress_delta_m,
         "corridor_distance_m": corridor_distance_m,
+        "left_boundary_margin_m": left_boundary_margin_m,
+        "right_boundary_margin_m": right_boundary_margin_m,
+        "track_width_m": track_width_m,
         "heading_error_rad": projection.heading_error_rad,
         "lookahead_heading_error_5m": projection.lookahead_heading_error_5m,
         "lookahead_heading_error_10m": projection.lookahead_heading_error_10m,
         "lateral_error_m": projection.lateral_error_m,
         "previous_steering": previous_action.steering,
+        "previous_throttle_brake": previous_action.throttle - previous_action.brake,
         "previous_throttle": previous_action.throttle,
         "previous_brake": previous_action.brake,
     }
@@ -214,8 +345,9 @@ def build_observation(
     )
     vector_keys = resolve_vector_observation_keys(vector_profile, distances)
     guide_keys = resolve_guide_observation_keys(vector_profile, distances)
+    vector_named = _normalize_vector_named(named, reference_path, distances)
     vector_values = _vector_values_with_dropout(
-        named=named,
+        named=vector_named,
         vector_keys=vector_keys,
         guide_keys=guide_keys,
         guide_dropout_prob=guide_dropout_prob,

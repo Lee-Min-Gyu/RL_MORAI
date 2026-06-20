@@ -115,11 +115,11 @@ class GymMoraiEnv(gym.Env if gym is not None else object):
                 brake=float(self.env.config.env.steering_only_fixed_brake),
                 steering=float(action_np[1]),
             ).clipped()
-        elif action_mode == "accel_brake_steering":
-            accel_brake = float(action_np[0])
+        elif action_mode == "throttle_brake_steering":
+            throttle_brake = float(action_np[0])
             command = ControlCommand(
-                throttle=max(0.0, accel_brake),
-                brake=max(0.0, -accel_brake),
+                throttle=max(0.0, throttle_brake),
+                brake=max(0.0, -throttle_brake),
                 steering=float(action_np[1]),
             ).clipped()
         elif action_mode == "throttle_steering":
@@ -130,10 +130,10 @@ class GymMoraiEnv(gym.Env if gym is not None else object):
             ).clipped()
         elif action_mode == "full":
             if action_np.shape[0] == 2:
-                accel_brake = float(action_np[0])
+                throttle_brake = float(action_np[0])
                 command = ControlCommand(
-                    throttle=max(0.0, accel_brake),
-                    brake=max(0.0, -accel_brake),
+                    throttle=max(0.0, throttle_brake),
+                    brake=max(0.0, -throttle_brake),
                     steering=float(action_np[1]),
                 ).clipped()
             else:
@@ -152,7 +152,7 @@ class GymMoraiEnv(gym.Env if gym is not None else object):
             raise ValueError(
                 "unsupported action_mode: "
                 f"{self.env.config.env.action_mode!r}; expected "
-                "steering_only, accel_brake_steering, throttle_steering, full, or full_3d"
+                "steering_only, throttle_brake_steering, throttle_steering, full, or full_3d"
             )
         try:
             obs, reward, terminated, truncated, info = self.env.step(command)

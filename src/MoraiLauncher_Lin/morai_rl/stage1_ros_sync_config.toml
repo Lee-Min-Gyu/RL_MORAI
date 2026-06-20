@@ -29,7 +29,7 @@ step_hz = 25.0
 action_repeat = 2
 max_steps = 3000
 target_speed_mps = 12.0
-action_mode = "accel_brake_steering"
+action_mode = "throttle_brake_steering"
 steering_only_control = false
 steering_only_fixed_throttle = 0.45
 steering_only_fixed_brake = 0.0
@@ -39,7 +39,7 @@ step_penalty = 0.12
 steering_delta_penalty_scale = 0.15
 brake_penalty_scale = 0.02
 boundary_proximity_penalty_scale = 5.0 #0.03
-boundary_proximity_margin_m = 0.3
+boundary_proximity_margin_m = 0.5
 lateral_error_penalty_scale = 0.5 #0.08
 lateral_error_penalty_clip_m = 2.0
 heading_error_penalty_scale = 0.5
@@ -87,14 +87,15 @@ max_reset_attempts = 3
 reset_retry_wait_sec = 10.0
 
 [path]
-csv_path = "../output/reference_path_centerline_kcity_2025.csv"
+csv_path = "../output/map_centerline_reference.csv"
+width_csv_path = "../output/map_centerline.csv"
 
 [route]
 enabled = true
 link_set_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PR_K-City_2025/link_set.json"
 corridor_selection_path = "../output/selected_links_2025_kcity.json"
 corridor_selection_key = "selected_link_ids"
-corridor_margin_m = 0.5
+corridor_margin_m = 0.15
 
 [observation]
 mode = "hybrid"
@@ -110,8 +111,8 @@ rear_range_m = 8.0
 left_range_m = 19.2
 right_range_m = 19.2
 include_lane_marking = false
-static_bev_npz_path = "../output/kcity_2025_selected_links_bev/static_bev.npz"
-static_bev_metadata_path = "../output/kcity_2025_selected_links_bev/static_bev_metadata.json"
+static_bev_npz_path = "../output/kcity_2025_selected_links_bev_w35_m015/static_bev.npz"
+static_bev_metadata_path = "../output/kcity_2025_selected_links_bev_w35_m015/static_bev_metadata.json"
 lane_marking_path = "../MORAI-ADModule/mgeo/lib/mgeo_data/R_KR_PR_K-City_2025/lane_marking_set.json"
 corridor_boundary_width_m = 0.2
 centerline_width_m = 0.3

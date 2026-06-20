@@ -49,7 +49,7 @@ class RouteCorridor:
         link_set_path: str | Path,
         selection_path: str | Path,
         selection_key: str = "selected_link_ids",
-        margin_m: float = 0.5,
+        margin_m: float = 0.15,
     ) -> "RouteCorridor":
         selected_ids = set(load_link_ids(selection_path, selection_key=selection_key))
         if not selected_ids:

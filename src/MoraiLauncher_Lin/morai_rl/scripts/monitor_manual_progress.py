@@ -59,9 +59,8 @@ def main() -> None:
                 first_progress = progress
             delta = 0.0 if last_progress is None else progress - last_progress
             last_progress = progress
-            corridor_distance = corridor.corridor_distance_m if corridor is not None else projection.distance_m
             inside = corridor.inside if corridor is not None else projection.distance_m <= env.config.env.off_track_distance_m
-            projection_off_track = not inside
+            pose_projection_off_track = not inside
             observation = build_observation(
                 state=state,
                 projection=projection,
@@ -76,19 +75,25 @@ def main() -> None:
                 guide_dropout_prob=env.config.observation.guide_dropout_prob,
                 lookahead_distances_m=env.config.observation.lookahead_distances_m,
                 reference_path=env.reference_path,
+                ego_vehicle_width_m=env.config.bev.ego_vehicle_width_m,
             )
             bev_contact = env._compute_bev_contact_metrics(observation)
-            footprint_off_track = bool(bev_contact["available"]) and int(bev_contact["outside_pixels"]) > 0
+            bev_available = bool(bev_contact["available"])
+            footprint_off_track = bev_available and int(bev_contact["outside_pixels"]) > 0
             boundary_overlap_off_track = (
-                bool(bev_contact["available"]) and int(bev_contact["boundary_overlap_pixels"]) > 0
+                bev_available and int(bev_contact["boundary_overlap_pixels"]) > 0
             )
-            off_track = footprint_off_track if bool(bev_contact["available"]) else projection_off_track
+            projection_off_track = False if bev_available else pose_projection_off_track
+            off_track = footprint_off_track if bev_available else pose_projection_off_track
             off_reasons = []
             if footprint_off_track:
                 off_reasons.append("footprint")
-            elif not bool(bev_contact["available"]) and projection_off_track:
+            elif projection_off_track:
                 off_reasons.append("projection_fallback")
             off_reason = ",".join(off_reasons) if off_reasons else "-"
+            left_boundary_margin = float(observation.named.get("left_boundary_margin_m", 0.0))
+            right_boundary_margin = float(observation.named.get("right_boundary_margin_m", 0.0))
+            track_width = float(observation.named.get("track_width_m", 0.0))
             print(
                 "progress "
                 f"path={progress:8.2f}m "
@@ -99,11 +104,11 @@ def main() -> None:
                 f"yaw={state.yaw_deg:7.2f}deg "
                 f"lat={projection.lateral_error_m:+6.2f}m "
                 f"head={projection.heading_error_rad:+6.3f}rad "
-                f"corridor={corridor_distance:+6.2f}m "
-                f"inside={'Y' if inside else 'N'} "
+                f"left_margin={left_boundary_margin:+5.2f}m "
+                f"right_margin={right_boundary_margin:+5.2f}m "
+                f"track_width={track_width:5.2f}m "
                 f"off_track={'Y' if off_track else 'N'} "
                 f"off_reason={off_reason} "
-                f"proj_out={'Y' if projection_off_track else 'N'} "
                 f"boundary_touch={'Y' if boundary_overlap_off_track else 'N'} "
                 f"bev_out={int(bev_contact['outside_pixels'])}px "
                 f"bev_boundary={int(bev_contact['boundary_overlap_pixels'])}px "

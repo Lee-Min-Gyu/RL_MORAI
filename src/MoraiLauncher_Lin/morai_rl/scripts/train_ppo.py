@@ -40,6 +40,11 @@ from morai_rl.core.simulator_process import (
     terminate_processes_by_cmdline_substrings,
     terminate_processes_by_name,
 )
+from morai_rl.core.episode_stats import (
+    EpisodeStatsWriter,
+    ScenarioStatsAccumulator,
+    build_episode_summary,
+)
 from morai_rl.envs.gym_wrapper import GymMoraiEnv
 from morai_rl.policies.squashed_policy import (
     SquashedActorCriticCnnPolicy,
@@ -60,18 +65,29 @@ CHANNEL_COLORS = {
 
 
 class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else object):
-    def __init__(self, initial_step_log_count: int = 0) -> None:
+    def __init__(
+        self,
+        initial_step_log_count: int = 0,
+        stats_dir: str | Path | None = None,
+        scenario_stats_every: int = 10,
+    ) -> None:
         if BaseCallback is None:  # pragma: no cover - runtime guard
             raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
         super().__init__()
         self.episode_count = 0
         self.initial_step_log_count = max(0, int(initial_step_log_count))
+        self.scenario_stats_every = max(0, int(scenario_stats_every))
+        self._writer = EpisodeStatsWriter(stats_dir, prefix="train_episodes") if stats_dir else None
+        self._scenario_stats = ScenarioStatsAccumulator()
         self._last_episode_wall_time: float | None = None
         self._episode_term_sums: list[dict[str, float]] = []
+        self._episode_reward_sums: list[float] = []
 
     def _ensure_term_buffers(self, env_count: int) -> None:
         while len(self._episode_term_sums) < env_count:
             self._episode_term_sums.append({})
+        while len(self._episode_reward_sums) < env_count:
+            self._episode_reward_sums.append(0.0)
 
     def _on_step(self) -> bool:
         dones = self.locals.get("dones")
@@ -80,9 +96,15 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             return True
 
         self._ensure_term_buffers(len(infos))
+        rewards = self.locals.get("rewards")
 
         for env_index, (done, info) in enumerate(zip(dones, infos)):
             self._print_initial_step(info)
+            if rewards is not None:
+                try:
+                    self._episode_reward_sums[env_index] += float(rewards[env_index])
+                except (IndexError, TypeError, ValueError):
+                    pass
             reward_terms = info.get("reward_terms")
             if isinstance(reward_terms, dict):
                 term_sums = self._episode_term_sums[env_index]
@@ -103,8 +125,11 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             episode_info = info.get("episode")
             if isinstance(episode_info, dict):
                 episode_reward = episode_info.get("r")
+            if episode_reward is None:
+                episode_reward = self._episode_reward_sums[env_index]
             reward_terms = dict(self._episode_term_sums[env_index])
             self._episode_term_sums[env_index] = {}
+            self._episode_reward_sums[env_index] = 0.0
             print(
                 "episode_end "
                 f"count={self.episode_count} "
@@ -130,7 +155,27 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
                         print(f"    {key}={signed_value:+.3f}", flush=True)
                     else:
                         print(f"    {key}={value}", flush=True)
+            summary = build_episode_summary(
+                source="train",
+                episode_index=self.episode_count,
+                info=info,
+                episode_reward=float(episode_reward),
+                reward_terms=reward_terms,
+                total_timesteps=int(self.num_timesteps),
+            )
+            self._scenario_stats.add(summary)
+            if self._writer is not None:
+                self._writer.write(summary)
+            if self.scenario_stats_every > 0 and self.episode_count % self.scenario_stats_every == 0:
+                self._scenario_stats.print_summary(
+                    label="scenario_stats",
+                    total_timesteps=int(self.num_timesteps),
+                )
         return True
+
+    def _on_training_end(self) -> None:
+        if self._writer is not None:
+            self._writer.close()
 
     def _print_initial_step(self, info: dict) -> None:
         if self.initial_step_log_count <= 0:
@@ -145,8 +190,6 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
         progress_delta_m = float(info.get("progress_delta_m", 0.0))
         lat = float(projection.get("lateral_error_m", 0.0))
         head = float(projection.get("heading_error_rad", 0.0))
-        corridor_distance = float(corridor.get("corridor_distance_m", 0.0)) if corridor else 0.0
-        inside = bool(corridor.get("inside", True)) if corridor else True
         speed = float(state.get("speed_mps", 0.0))
         yaw = float(state.get("yaw_deg", 0.0))
         print(
@@ -158,8 +201,6 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             f"dp={progress_delta_m:+.3f} "
             f"lat={lat:+.3f} "
             f"head={head:+.3f} "
-            f"corridor={corridor_distance:+.3f} "
-            f"inside={inside} "
             f"speed={speed:.2f} "
             f"yaw={yaw:.2f}",
             flush=True,
@@ -239,7 +280,7 @@ class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
         self._action_batches.clear()
         self._env_action_batches.clear()
         if actions.shape[1] >= 2:
-            accel_index = 0
+            throttle_brake_index = 0
             steer_index = 1
         else:
             return
@@ -258,17 +299,19 @@ class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
             f"clip_ratio={steer_clip_ratio:.3f}",
             flush=True,
         )
-        accel_action = env_actions[:, accel_index]
-        accel_clip_ratio = float(np.mean(np.abs(actions[:, accel_index] - accel_action) > 1e-6))
-        accel_saturation_ratio = float(np.mean(np.abs(accel_action) > 0.999))
+        throttle_brake_action = env_actions[:, throttle_brake_index]
+        throttle_brake_clip_ratio = float(
+            np.mean(np.abs(actions[:, throttle_brake_index] - throttle_brake_action) > 1e-6)
+        )
+        throttle_brake_saturation_ratio = float(np.mean(np.abs(throttle_brake_action) > 0.999))
         print(
-            f"raw_accel_brake_mean={float(np.mean(raw_mean[:, accel_index])):+.3f} "
-            f"raw_accel_brake_std={float(np.mean(raw_std[:, accel_index])):.3f} "
-            f"squashed_accel_brake_mean={float(np.mean(accel_action)):+.3f} "
-            f"squashed_accel_brake_min={float(np.min(accel_action)):+.3f} "
-            f"squashed_accel_brake_max={float(np.max(accel_action)):+.3f} "
-            f"accel_brake_saturation_ratio={accel_saturation_ratio:.3f} "
-            f"accel_brake_clip_ratio={accel_clip_ratio:.3f}",
+            f"raw_throttle_brake_mean={float(np.mean(raw_mean[:, throttle_brake_index])):+.3f} "
+            f"raw_throttle_brake_std={float(np.mean(raw_std[:, throttle_brake_index])):.3f} "
+            f"squashed_throttle_brake_mean={float(np.mean(throttle_brake_action)):+.3f} "
+            f"squashed_throttle_brake_min={float(np.min(throttle_brake_action)):+.3f} "
+            f"squashed_throttle_brake_max={float(np.max(throttle_brake_action)):+.3f} "
+            f"throttle_brake_saturation_ratio={throttle_brake_saturation_ratio:.3f} "
+            f"throttle_brake_clip_ratio={throttle_brake_clip_ratio:.3f}",
             flush=True,
         )
 
@@ -398,11 +441,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
     parser.add_argument("--set-log-std", type=float, default=None)
-    parser.add_argument("--set-accel-brake-mean", type=float, default=None)
-    parser.add_argument("--set-accel-brake-std", type=float, default=None)
+    parser.add_argument("--set-throttle-brake-mean", type=float, default=None)
+    parser.add_argument("--set-throttle-brake-std", type=float, default=None)
     parser.add_argument("--set-steering-std", type=float, default=None)
     parser.add_argument("--action-log-freq", type=int, default=0)
     parser.add_argument("--initial-step-log-count", type=int, default=0)
+    parser.add_argument(
+        "--stats-dir",
+        default="",
+        help="Directory for episode CSV/JSONL logs. Defaults to <save-dir>/<run-name>/stats.",
+    )
+    parser.add_argument("--disable-episode-stats", action="store_true")
+    parser.add_argument(
+        "--scenario-stats-every",
+        type=int,
+        default=10,
+        help="Print aggregate per-scenario episode stats every N completed episodes. 0 disables.",
+    )
     parser.add_argument("--sb3-verbose", type=int, default=0)
     parser.add_argument("--checkpoint-freq", type=int, default=5_000)
     parser.add_argument("--progress-bar", action="store_true")
@@ -549,7 +604,7 @@ def _action_net_row(model, index: int):
     return action_net, index
 
 
-def _set_accel_brake_mean(model, mean: float) -> None:
+def _set_throttle_brake_mean(model, mean: float) -> None:
     if th is None:
         return
     action_net, index = _action_net_row(model, 0)
@@ -561,7 +616,7 @@ def _set_accel_brake_mean(model, mean: float) -> None:
         after_bias = float(action_net.bias[index].detach().cpu().item())
         after_weight_norm = float(th.linalg.vector_norm(action_net.weight[index]).detach().cpu().item())
     print(
-        "set_accel_brake_mean "
+        "set_throttle_brake_mean "
         f"before_bias={before_bias:+.3f} before_weight_norm={before_weight_norm:.3f} "
         f"after_bias={after_bias:+.3f} after_weight_norm={after_weight_norm:.3f}",
         flush=True,
@@ -615,10 +670,10 @@ def _set_log_std(model, log_std_value: float) -> None:
 def _apply_policy_overrides(model, args: argparse.Namespace) -> None:
     if args.set_log_std is not None:
         _set_log_std(model, float(args.set_log_std))
-    if args.set_accel_brake_mean is not None:
-        _set_accel_brake_mean(model, float(args.set_accel_brake_mean))
-    if args.set_accel_brake_std is not None:
-        _set_action_std(model, 0, float(args.set_accel_brake_std), "accel_brake")
+    if args.set_throttle_brake_mean is not None:
+        _set_throttle_brake_mean(model, float(args.set_throttle_brake_mean))
+    if args.set_throttle_brake_std is not None:
+        _set_action_std(model, 0, float(args.set_throttle_brake_std), "throttle_brake")
     if args.set_steering_std is not None:
         _set_action_std(model, 1, float(args.set_steering_std), "steering")
 
@@ -762,6 +817,10 @@ def main() -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir = save_dir / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    stats_dir = None if args.disable_episode_stats else Path(args.stats_dir or (save_dir / "stats"))
+    if stats_dir is not None:
+        stats_dir.mkdir(parents=True, exist_ok=True)
+        print(f"episode_stats_dir={stats_dir}", flush=True)
     recovery_options = _runtime_recovery_options(args)
     if recovery_options["enabled"]:
         print(
@@ -798,6 +857,8 @@ def main() -> None:
         )
         episode_stats_callback = EpisodeResetStatsCallback(
             initial_step_log_count=args.initial_step_log_count,
+            stats_dir=stats_dir,
+            scenario_stats_every=args.scenario_stats_every,
         )
         callbacks = [checkpoint_callback, episode_stats_callback]
         if args.action_log_freq > 0:

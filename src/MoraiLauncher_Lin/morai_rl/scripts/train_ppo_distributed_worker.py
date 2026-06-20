@@ -343,7 +343,7 @@ class _ActionStats:
         self._env_actions.clear()
         if actions.shape[1] < 2:
             return
-        accel_index = 0
+        throttle_brake_index = 0
         steer_index = 1
         steer_action = env_actions[:, steer_index]
         steer_clip_ratio = float(np.mean(np.abs(actions[:, steer_index] - steer_action) > 1e-6))
@@ -360,19 +360,21 @@ class _ActionStats:
             f"clip_ratio={steer_clip_ratio:.3f}",
             flush=True,
         )
-        accel_action = env_actions[:, accel_index]
-        accel_clip_ratio = float(np.mean(np.abs(actions[:, accel_index] - accel_action) > 1e-6))
-        accel_saturation_ratio = float(np.mean(np.abs(accel_action) > 0.999))
+        throttle_brake_action = env_actions[:, throttle_brake_index]
+        throttle_brake_clip_ratio = float(
+            np.mean(np.abs(actions[:, throttle_brake_index] - throttle_brake_action) > 1e-6)
+        )
+        throttle_brake_saturation_ratio = float(np.mean(np.abs(throttle_brake_action) > 0.999))
         print(
             "worker_action_stats "
             f"worker_id={self.worker_id} total_steps={self.total_steps} "
-            f"raw_accel_brake_mean={float(np.mean(raw_mean[:, accel_index])):+.3f} "
-            f"raw_accel_brake_std={float(np.mean(raw_std[:, accel_index])):.3f} "
-            f"squashed_accel_brake_mean={float(np.mean(accel_action)):+.3f} "
-            f"squashed_accel_brake_min={float(np.min(accel_action)):+.3f} "
-            f"squashed_accel_brake_max={float(np.max(accel_action)):+.3f} "
-            f"accel_brake_saturation_ratio={accel_saturation_ratio:.3f} "
-            f"accel_brake_clip_ratio={accel_clip_ratio:.3f}",
+            f"raw_throttle_brake_mean={float(np.mean(raw_mean[:, throttle_brake_index])):+.3f} "
+            f"raw_throttle_brake_std={float(np.mean(raw_std[:, throttle_brake_index])):.3f} "
+            f"squashed_throttle_brake_mean={float(np.mean(throttle_brake_action)):+.3f} "
+            f"squashed_throttle_brake_min={float(np.min(throttle_brake_action)):+.3f} "
+            f"squashed_throttle_brake_max={float(np.max(throttle_brake_action)):+.3f} "
+            f"throttle_brake_saturation_ratio={throttle_brake_saturation_ratio:.3f} "
+            f"throttle_brake_clip_ratio={throttle_brake_clip_ratio:.3f}",
             flush=True,
         )
 
@@ -425,6 +427,8 @@ def _finish_episode_tracker(tracker: dict, info: dict, worker_id: str) -> dict:
         "step_count": info.get("step_count"),
         "episode_progress_m": info.get("episode_progress_m"),
         "episode_reward": float(tracker.get("episode_reward", 0.0)),
+        "episode_duration_sec": info.get("episode_duration_sec"),
+        "lap_completed": info.get("lap_completed"),
         "reward_terms": dict(tracker.get("reward_terms", {})),
     }
     _print_episode_summary(worker_id, summary)

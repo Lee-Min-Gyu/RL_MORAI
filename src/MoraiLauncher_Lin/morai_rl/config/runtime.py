@@ -221,6 +221,7 @@ class ResetConfig:
 @dataclass
 class PathConfig:
     csv_path: str = "../output/reference_path_centerline.csv"
+    width_csv_path: str = ""
 
 
 @dataclass
@@ -229,7 +230,7 @@ class RouteConfig:
     link_set_path: str = ""
     corridor_selection_path: str = ""
     corridor_selection_key: str = "selected_link_ids"
-    corridor_margin_m: float = 0.5
+    corridor_margin_m: float = 0.15
 
 
 @dataclass
@@ -308,6 +309,8 @@ def load_config(path: str | Path) -> AppConfig:
 
     if not Path(path_cfg.csv_path).is_absolute():
         path_cfg.csv_path = str((config_path.parent / path_cfg.csv_path).resolve())
+    if path_cfg.width_csv_path and not Path(path_cfg.width_csv_path).is_absolute():
+        path_cfg.width_csv_path = str((config_path.parent / path_cfg.width_csv_path).resolve())
     if route_cfg.link_set_path and not Path(route_cfg.link_set_path).is_absolute():
         route_cfg.link_set_path = str((config_path.parent / route_cfg.link_set_path).resolve())
     if route_cfg.corridor_selection_path and not Path(route_cfg.corridor_selection_path).is_absolute():

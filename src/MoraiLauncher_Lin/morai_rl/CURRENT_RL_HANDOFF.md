@@ -18,9 +18,10 @@ Important current values:
 
 ```toml
 [env]
-step_hz = 50.0
+step_hz = 25.0
+action_repeat = 2
 max_steps = 6000
-action_mode = "accel_brake_steering"
+action_mode = "throttle_brake_steering"
 progress_reward_scale = 8.0
 step_penalty = 0.08
 steering_delta_penalty_scale = 0.1
@@ -52,6 +53,12 @@ Observation is hybrid BeV + vector racing guide. Lookahead has been increased fo
 ```toml
 lookahead_distances_m = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
 ```
+
+The current `racing_guide` vector is 36D. It uses `longitudinal_speed_mps`,
+`lateral_speed_mps`, and `steer_angle_norm` instead of scalar `speed_mps` and
+raw `steer_angle`, keeps previous action as `previous_steering` and
+`previous_throttle_brake`, adds current left/right boundary margin and track width,
+then 6 lookahead samples x `x/y/heading_error/track_width`.
 
 Because lookahead count changed, old checkpoints with the previous observation shape should not be resumed directly.
 
@@ -180,8 +187,8 @@ This prints actual rollout action statistics:
 ```text
 raw_steer_mean/raw_steer_std
 squashed_steer_mean/min/max
-raw_accel_brake_mean/raw_accel_brake_std
-squashed_accel_brake_mean/min/max
+raw_throttle_brake_mean/raw_throttle_brake_std
+squashed_throttle_brake_mean/min/max
 saturation_ratio
 clip_ratio
 ```
@@ -217,12 +224,12 @@ Current direction:
 
 ```bash
 --action-dist tanh_squashed \
---set-accel-brake-mean 0.35 \
---set-accel-brake-std 0.25 \
+--set-throttle-brake-mean 0.35 \
+--set-throttle-brake-std 0.25 \
 --set-steering-std 0.20
 ```
 
-Avoid `steering_std` too high initially because it caused unstable/noisy driving. Avoid `accel_brake_mean` too high because it can push into corners too aggressively.
+Avoid `steering_std` too high initially because it caused unstable/noisy driving. Avoid `throttle_brake_mean` too high because it can push into corners too aggressively.
 
 ## Recommended Fresh Distributed Run
 
@@ -244,8 +251,8 @@ CUDA_VISIBLE_DEVICES=0 python3 -m morai_rl.scripts.train_ppo_distributed_learner
   --device cuda \
   --run-name <date_or_date_time> \
   --action-dist tanh_squashed \
-  --set-accel-brake-mean 0.35 \
-  --set-accel-brake-std 0.25 \
+  --set-throttle-brake-mean 0.35 \
+  --set-throttle-brake-std 0.25 \
   --set-steering-std 0.20 \
   --checkpoint-freq 6144 \
   --progress-bar
@@ -288,8 +295,8 @@ Do not judge by total reward alone. Watch:
 - `reason=lap_completed` starts appearing.
 - `reason=max_steps` with `timeout_penalty` should become less common.
 - `episode_progress_m` should trend from 800-900 m toward 1720 m.
-- `squashed_accel_brake_mean` should not collapse below about 0.15 for long periods.
-- `raw_accel_brake_mean` should generally stay positive and adapt by segment.
+- `squashed_throttle_brake_mean` should not collapse below about 0.15 for long periods.
+- `raw_throttle_brake_mean` should generally stay positive and adapt by segment.
 - `steering_delta_penalty` should not explode; if steering oscillation persists, consider `steering_delta_penalty_scale = 0.15`, but be careful because too high can hurt tight corner learning.
 - If speed remains too low despite lap/timeout terms, consider adding episode speed metrics to worker logs rather than changing action means immediately.
 

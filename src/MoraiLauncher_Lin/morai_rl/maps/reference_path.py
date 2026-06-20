@@ -14,6 +14,8 @@ class PathPoint:
     y: float
     yaw_rad: float
     cumulative_s_m: float
+    left_width_m: float | None = None
+    right_width_m: float | None = None
 
 
 class ReferencePath:
@@ -25,6 +27,7 @@ class ReferencePath:
         first = points[0]
         last = points[-1]
         self.is_closed_loop = math.hypot(last.x - first.x, last.y - first.y) <= 1.0
+        self._max_track_width_m = self._compute_max_track_width_m()
 
     @classmethod
     def from_csv(cls, csv_path: str | Path) -> "ReferencePath":
@@ -37,10 +40,16 @@ class ReferencePath:
 
         raw_xy: list[tuple[float, float]] = []
         raw_yaw: list[float | None] = []
+        raw_left_width: list[float | None] = []
+        raw_right_width: list[float | None] = []
         for row in rows:
             raw_xy.append((float(row["x"]), float(row["y"])))
             yaw_deg = row.get("yaw_deg")
             raw_yaw.append(None if yaw_deg in (None, "") else math.radians(float(yaw_deg)))
+            left_width = row.get("left_width_m") or row.get("left_width") or row.get("left")
+            right_width = row.get("right_width_m") or row.get("right_width") or row.get("right")
+            raw_left_width.append(None if left_width in (None, "") else float(left_width))
+            raw_right_width.append(None if right_width in (None, "") else float(right_width))
 
         cumulative_s = 0.0
         points: list[PathPoint] = []
@@ -57,9 +66,78 @@ class ReferencePath:
                 else:
                     prev_x, prev_y = raw_xy[index - 1]
                     yaw_rad = math.atan2(y - prev_y, x - prev_x)
-            points.append(PathPoint(x=x, y=y, yaw_rad=yaw_rad, cumulative_s_m=cumulative_s))
+            points.append(
+                PathPoint(
+                    x=x,
+                    y=y,
+                    yaw_rad=yaw_rad,
+                    cumulative_s_m=cumulative_s,
+                    left_width_m=raw_left_width[index],
+                    right_width_m=raw_right_width[index],
+                )
+            )
 
         return cls(points=points)
+
+    def attach_widths_from_csv(self, csv_path: str | Path) -> None:
+        entries = _load_width_entries(csv_path)
+        if not entries:
+            raise ValueError(f"track width csv is empty: {csv_path}")
+
+        lookup = {
+            _xy_key(x, y): (left_width_m, right_width_m)
+            for x, y, left_width_m, right_width_m in entries
+        }
+        missing_count = 0
+        for point in self.points:
+            widths = lookup.get(_xy_key(point.x, point.y))
+            if widths is None:
+                missing_count += 1
+                continue
+            point.left_width_m, point.right_width_m = widths
+        if missing_count > 0:
+            raise ValueError(
+                f"track width csv does not match reference path: "
+                f"{missing_count}/{len(self.points)} points missing"
+            )
+        self._max_track_width_m = self._compute_max_track_width_m()
+
+    def track_width_at(self, index: int) -> float:
+        point = self.points[max(0, min(len(self.points) - 1, int(index)))]
+        if point.left_width_m is None or point.right_width_m is None:
+            return 0.0
+        return max(0.0, float(point.left_width_m) + float(point.right_width_m))
+
+    def max_track_width_m(self) -> float:
+        return self._max_track_width_m
+
+    def _compute_max_track_width_m(self) -> float:
+        max_width_m = 0.0
+        for point in self.points:
+            if point.left_width_m is None or point.right_width_m is None:
+                continue
+            max_width_m = max(
+                max_width_m,
+                float(point.left_width_m) + float(point.right_width_m),
+            )
+        return max_width_m
+
+    def boundary_margins_at(
+        self,
+        index: int,
+        lateral_error_m: float,
+        vehicle_width_m: float,
+    ) -> tuple[float, float, float]:
+        point = self.points[max(0, min(len(self.points) - 1, int(index)))]
+        if point.left_width_m is None or point.right_width_m is None:
+            return 0.0, 0.0, 0.0
+        half_vehicle_width_m = 0.5 * max(0.0, float(vehicle_width_m))
+        left_width_m = float(point.left_width_m)
+        right_width_m = float(point.right_width_m)
+        lateral_error_m = float(lateral_error_m)
+        left_margin_m = left_width_m - lateral_error_m - half_vehicle_width_m
+        right_margin_m = right_width_m + lateral_error_m - half_vehicle_width_m
+        return left_margin_m, right_margin_m, left_width_m + right_width_m
 
     def project(
         self,
@@ -152,3 +230,44 @@ class ReferencePath:
             if self.points[index].cumulative_s_m >= target_s:
                 return index
         return len(self.points) - 1
+
+
+def _load_width_entries(csv_path: str | Path) -> list[tuple[float, float, float, float]]:
+    path = Path(csv_path)
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        sample = handle.readline()
+        handle.seek(0)
+        first_row = next(csv.reader([sample]))
+        has_header = any(not _is_float(value) for value in first_row)
+        entries: list[tuple[float, float, float, float]] = []
+        if has_header:
+            for row in csv.DictReader(handle):
+                entries.append(
+                    (
+                        float(row["x"]),
+                        float(row["y"]),
+                        float(row.get("left_width_m") or row.get("left_width") or row.get("left")),
+                        float(row.get("right_width_m") or row.get("right_width") or row.get("right")),
+                    )
+                )
+        else:
+            for row in csv.reader(handle):
+                if not row:
+                    continue
+                if len(row) < 4:
+                    raise ValueError(f"track width csv requires at least 4 columns: {path}")
+                x, y, left_width_m, right_width_m = map(float, row[:4])
+                entries.append((x, y, left_width_m, right_width_m))
+    return entries
+
+
+def _is_float(value: str) -> bool:
+    try:
+        float(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _xy_key(x: float, y: float) -> tuple[float, float]:
+    return round(float(x), 3), round(float(y), 3)

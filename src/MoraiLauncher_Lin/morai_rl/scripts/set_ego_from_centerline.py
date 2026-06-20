@@ -17,7 +17,7 @@ else:
 
 
 DEFAULT_CENTERLINE_PATH = (
-    Path(__file__).resolve().parents[2] / "output" / "reference_path_centerline.csv"
+    Path(__file__).resolve().parents[2] / "output" / "map_centerline_reference.csv"
 )
 
 
@@ -53,10 +53,15 @@ def main() -> None:
             "rospy and morai_msgs are required. Source ROS/catkin setup before running."
         ) from _ROS_IMPORT_ERROR
 
-    pose = _load_pose(Path(args.csv), args.index)
-    x = float(args.x) if args.x is not None else pose["x"]
-    y = float(args.y) if args.y is not None else pose["y"]
-    yaw_deg = float(args.yaw_deg) if args.yaw_deg is not None else pose["yaw_deg"]
+    if args.x is not None and args.y is not None and args.yaw_deg is not None:
+        x = float(args.x)
+        y = float(args.y)
+        yaw_deg = float(args.yaw_deg)
+    else:
+        pose = _load_pose(Path(args.csv), args.index)
+        x = float(args.x) if args.x is not None else pose["x"]
+        y = float(args.y) if args.y is not None else pose["y"]
+        yaw_deg = float(args.yaw_deg) if args.yaw_deg is not None else pose["yaw_deg"]
 
     rospy.init_node(args.node_name, anonymous=True)
     publisher = rospy.Publisher(args.topic, MultiEgoSetting, queue_size=1, latch=args.latch)

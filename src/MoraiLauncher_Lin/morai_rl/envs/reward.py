@@ -24,6 +24,7 @@ def compute_reward(
     heading_error_penalty_clip_rad: float,
     boundary_proximity_penalty_scale: float,
     boundary_proximity_margin_m: float,
+    footprint_boundary_margin_m: float | None,
     off_track_penalty_value: float,
     stalled_penalty_value: float,
 ) -> tuple[float, dict[str, float]]:
@@ -43,7 +44,11 @@ def compute_reward(
         max(0.0, float(heading_error_penalty_clip_rad)),
     )
     boundary_proximity_penalty = 0.0
-    if corridor_projection is not None and corridor_projection.inside:
+    if footprint_boundary_margin_m is not None and footprint_boundary_margin_m >= 0.0:
+        boundary_margin_m = max(0.0, float(footprint_boundary_margin_m))
+        proximity_m = max(0.0, float(boundary_proximity_margin_m) - boundary_margin_m)
+        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_m
+    elif corridor_projection is not None and corridor_projection.inside:
         boundary_margin_m = max(0.0, -float(corridor_projection.corridor_distance_m))
         proximity_m = max(0.0, float(boundary_proximity_margin_m) - boundary_margin_m)
         boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_m

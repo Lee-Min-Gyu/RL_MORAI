@@ -52,13 +52,6 @@ def main() -> None:
             _, info = env.reset()
             state = info["state"]
             projection = info["projection"]
-            corridor = info.get("corridor")
-            corridor_text = ""
-            if corridor is not None:
-                corridor_text = (
-                    f" corridor={corridor['corridor_distance_m']:+.2f}"
-                    f" inside={corridor['inside']}"
-                )
             print(
                 f"reset ok {index + 1}/{repeats} "
                 f"scenario={info.get('scenario_name')} "
@@ -67,8 +60,7 @@ def main() -> None:
                 f"pos=({state['x']:.2f},{state['y']:.2f},{state['z']:.2f}) "
                 f"yaw={state['yaw_deg']:.2f} speed={state['speed_mps']:.2f} "
                 f"progress={projection['progress_m']:.2f} "
-                f"lat={projection['lateral_error_m']:.2f}"
-                f"{corridor_text}",
+                f"lat={projection['lateral_error_m']:.2f}",
                 flush=True,
             )
             if index + 1 < repeats and args.sleep_sec > 0.0:
