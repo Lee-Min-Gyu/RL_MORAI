@@ -10,28 +10,37 @@ from stable_baselines3.common.type_aliases import TensorDict
 
 
 class RoachBeVEncoder(nn.Module):
-    """ROACH-style BeV encoder for 192x192 channel-first observations."""
+    """Lightweight BeV encoder for 192x192 channel-first observations."""
 
-    def __init__(self, n_input_channels: int) -> None:
+    def __init__(
+        self,
+        n_input_channels: int,
+        input_height: int,
+        input_width: int,
+        feature_dim: int = 256,
+    ) -> None:
         super().__init__()
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 8, kernel_size=5, stride=2),
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4),
             nn.ReLU(),
-            nn.Conv2d(8, 16, kernel_size=5, stride=2),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
-            nn.Conv2d(16, 32, kernel_size=5, stride=2),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=3, stride=1),
-            nn.ReLU(),
+        )
+        with th.no_grad():
+            sample = th.zeros((1, n_input_channels, input_height, input_width), dtype=th.float32)
+            flattened_dim = int(th.flatten(self.cnn(sample), start_dim=1).shape[1])
+        self.linear = nn.Sequential(
             nn.Flatten(),
+            nn.Linear(flattened_dim, int(feature_dim)),
+            nn.ReLU(),
         )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        return self.cnn(observations)
+        return self.linear(self.cnn(observations))
 
 
 class RoachCombinedExtractor(BaseFeaturesExtractor):
@@ -50,7 +59,12 @@ class RoachCombinedExtractor(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace, normalized_image=normalized_image):
                 n_input_channels = int(subspace.shape[0])
-                encoder = RoachBeVEncoder(n_input_channels)
+                encoder = RoachBeVEncoder(
+                    n_input_channels=n_input_channels,
+                    input_height=int(subspace.shape[1]),
+                    input_width=int(subspace.shape[2]),
+                    feature_dim=256,
+                )
                 with th.no_grad():
                     sample = th.zeros((1, *subspace.shape), dtype=th.float32)
                     encoded_dim = int(encoder(sample).shape[1])
