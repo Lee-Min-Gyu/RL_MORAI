@@ -20,6 +20,7 @@ from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.envs.gym_wrapper import GymMoraiEnv
 from morai_rl.scripts.train_ppo import (
     _close_env_quietly,
+    _print_episode_reward_breakdown,
     _recover_runtime_after_crash,
     _runtime_recovery_options,
 )
@@ -479,26 +480,18 @@ def _print_episode_summary(worker_id: str, summary: dict) -> None:
         "worker_episode_end "
         f"worker_id={worker_id} "
         f"count={summary.get('episode_count')} "
-        f"total_timesteps={summary.get('total_timesteps')} "
         f"scenario={summary.get('scenario_name')} "
         f"reason={summary.get('termination_reason')} "
-        f"steps={summary.get('step_count')}",
+        f"steps={summary.get('step_count')} "
+        f"total_timesteps={summary.get('total_timesteps')} "
+        f"progress_m={_format_signed_float(summary.get('episode_progress_m'))}",
         flush=True,
     )
-    _print_float_line("  progress_m", summary.get("episode_progress_m"))
-    _print_float_line("  total_reward", summary.get("episode_reward"))
-    reward_terms = summary.get("reward_terms")
-    if not isinstance(reward_terms, dict) or not reward_terms:
-        return
-    print("  reward_terms", flush=True)
-    for key, value in reward_terms.items():
-        if isinstance(value, (int, float)):
-            signed_value = float(value)
-            if key.endswith("_penalty"):
-                signed_value = -signed_value
-            print(f"    {key}={signed_value:+.3f}", flush=True)
-        else:
-            print(f"    {key}={value}", flush=True)
+    _print_episode_reward_breakdown(
+        episode_reward=summary.get("episode_reward"),
+        reward_terms=summary.get("reward_terms"),
+        termination_reason=summary.get("termination_reason"),
+    )
 
 
 def _print_float_line(label: str, value) -> None:
@@ -506,6 +499,13 @@ def _print_float_line(label: str, value) -> None:
         print(f"{label}={float(value):+.3f}", flush=True)
     except (TypeError, ValueError):
         print(f"{label}={value}", flush=True)
+
+
+def _format_signed_float(value) -> str:
+    try:
+        return f"{float(value):+.2f}"
+    except (TypeError, ValueError):
+        return str(value)
 
 
 if __name__ == "__main__":

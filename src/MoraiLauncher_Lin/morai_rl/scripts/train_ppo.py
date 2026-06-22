@@ -135,28 +135,18 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             print(
                 "episode_end "
                 f"count={self.episode_count} "
-                f"total_timesteps={self.num_timesteps} "
                 f"scenario={scenario_name} "
                 f"reason={reason} "
                 f"steps={steps} "
+                f"total_timesteps={self.num_timesteps} "
                 f"progress_m={float(progress_m):+.2f}",
                 flush=True,
             )
-            if episode_reward is not None:
-                try:
-                    print(f"  total_reward={float(episode_reward):+.3f}", flush=True)
-                except (TypeError, ValueError):
-                    print(f"  total_reward={episode_reward}", flush=True)
-            if isinstance(reward_terms, dict) and reward_terms:
-                print("  reward_terms", flush=True)
-                for key, value in reward_terms.items():
-                    if isinstance(value, (int, float)):
-                        signed_value = float(value)
-                        if key.endswith("_penalty"):
-                            signed_value = -signed_value
-                        print(f"    {key}={signed_value:+.3f}", flush=True)
-                    else:
-                        print(f"    {key}={value}", flush=True)
+            _print_episode_reward_breakdown(
+                episode_reward=episode_reward,
+                reward_terms=reward_terms,
+                termination_reason=reason,
+            )
             summary = build_episode_summary(
                 source="train",
                 episode_index=self.episode_count,
@@ -207,6 +197,54 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             f"yaw={yaw:.2f}",
             flush=True,
         )
+
+
+def _print_episode_reward_breakdown(
+    *,
+    episode_reward,
+    reward_terms: dict,
+    termination_reason,
+) -> None:
+    _print_float_line("  total_reward", episode_reward)
+    if not isinstance(reward_terms, dict) or not reward_terms:
+        return
+    print("  reward_terms", flush=True)
+    for key in (
+        "progress_reward",
+        "steering_delta_penalty",
+        "lateral_error_penalty",
+        "heading_error_penalty",
+        "boundary_proximity_penalty",
+    ):
+        _print_reward_term(reward_terms, key)
+    reason = str(termination_reason or "")
+    if reason == "off_track":
+        _print_reward_term(reward_terms, "off_track_penalty")
+    elif reason == "stalled":
+        _print_reward_term(reward_terms, "stalled_penalty")
+    elif reason == "lap_completed":
+        _print_reward_term(reward_terms, "lap_completed_bonus", label="lap_completion_reward")
+
+
+def _print_reward_term(reward_terms: dict, key: str, label: str | None = None) -> None:
+    if key not in reward_terms:
+        return
+    value = reward_terms[key]
+    output_label = label or key
+    if isinstance(value, (int, float)):
+        signed_value = float(value)
+        if key.endswith("_penalty"):
+            signed_value = -signed_value
+        print(f"    {output_label}={signed_value:+.3f}", flush=True)
+    else:
+        print(f"    {output_label}={value}", flush=True)
+
+
+def _print_float_line(label: str, value) -> None:
+    try:
+        print(f"{label}={float(value):+.3f}", flush=True)
+    except (TypeError, ValueError):
+        print(f"{label}={value}", flush=True)
 
 
 class PenaltyCurriculumCallback(BaseCallback if BaseCallback is not None else object):
