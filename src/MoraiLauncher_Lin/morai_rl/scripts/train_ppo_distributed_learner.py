@@ -94,6 +94,9 @@ def main() -> None:
         tb_log_name=args.run_name,
         progress_bar=False,
     )
+    if penalty_curriculum is not None:
+        _record_penalty_curriculum(model, penalty_curriculum)
+        model.logger.dump(step=int(model.num_timesteps))
 
     with socket.create_server((args.host, args.port), reuse_port=False) as server:
         server.listen(args.workers)
@@ -127,6 +130,15 @@ def main() -> None:
                 )
                 elapsed = time.monotonic() - started_at
                 _update_progress_bar(progress_bar, int(model.num_timesteps) - before_timesteps)
+                _record_distributed_tensorboard(
+                    model=model,
+                    rollouts=rollouts,
+                    policy_version=policy_version,
+                    update_count=update_count,
+                    elapsed_sec=elapsed,
+                    penalty_curriculum=penalty_curriculum,
+                )
+                model.logger.dump(step=int(model.num_timesteps))
                 print(
                     "learner_update "
                     f"update={update_count} policy_version={policy_version} "
@@ -491,6 +503,69 @@ def _log_rollout_stats(rollouts: list[dict], policy_version: int) -> None:
             flush=True,
         )
         _print_reward_terms(worker_id, summaries)
+
+
+def _record_distributed_tensorboard(
+    *,
+    model,
+    rollouts: list[dict],
+    policy_version: int,
+    update_count: int,
+    elapsed_sec: float,
+    penalty_curriculum: DistributedPenaltyCurriculum | None,
+) -> None:
+    logger = getattr(model, "logger", None)
+    if logger is None:
+        return
+    episode_summaries = [
+        episode
+        for rollout in rollouts
+        for episode in rollout.get("episode_summaries", [])
+        if isinstance(episode, dict)
+    ]
+    total_steps = sum(int(rollout.get("steps", 0) or 0) for rollout in rollouts)
+    total_reward = sum(float(reward) for rollout in rollouts for reward in rollout.get("rewards", []))
+    logger.record("distributed/policy_version", int(policy_version))
+    logger.record("distributed/update_count", int(update_count))
+    logger.record("distributed/update_elapsed_sec", float(elapsed_sec))
+    logger.record("distributed/rollout_steps", int(total_steps))
+    if total_steps > 0:
+        logger.record("distributed/mean_step_reward", float(total_reward) / float(total_steps))
+    if episode_summaries:
+        progresses = [_safe_float(summary.get("episode_progress_m")) for summary in episode_summaries]
+        rewards = [_safe_float(summary.get("episode_reward")) for summary in episode_summaries]
+        lengths = [_safe_float(summary.get("step_count")) for summary in episode_summaries]
+        reasons = [str(summary.get("termination_reason") or "unknown") for summary in episode_summaries]
+        logger.record("rollout/completed_episodes", len(episode_summaries))
+        logger.record("rollout/progress_mean_m", sum(progresses) / len(progresses))
+        logger.record("rollout/progress_max_m", max(progresses))
+        logger.record("rollout/ep_rew_mean", sum(rewards) / len(rewards))
+        logger.record("rollout/ep_len_mean", sum(lengths) / len(lengths))
+        for reason in sorted(set(reasons)):
+            rate = sum(1 for item in reasons if item == reason) / len(reasons)
+            logger.record(f"rollout/reason_rate_{reason}", rate)
+    if penalty_curriculum is not None:
+        _record_penalty_curriculum(model, penalty_curriculum)
+
+
+def _record_penalty_curriculum(model, penalty_curriculum: DistributedPenaltyCurriculum) -> None:
+    logger = getattr(model, "logger", None)
+    if logger is None:
+        return
+    payload = penalty_curriculum.payload()
+    logger.record("curriculum/stage", int(payload["stage_index"]))
+    logger.record("curriculum/off_track_penalty", float(payload["off_track_penalty"]))
+    logger.record("curriculum/stalled_penalty", float(payload["stalled_penalty"]))
+    logger.record("curriculum/recent_count", int(payload["recent_count"]))
+    logger.record("curriculum/window_episodes", int(payload["window_episodes"]))
+    logger.record("curriculum/required_episodes", int(payload["required_episodes"]))
+
+
+def _safe_float(value) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _print_reward_terms(worker_id, summaries: list[dict]) -> None:

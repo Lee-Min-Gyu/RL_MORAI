@@ -99,6 +99,8 @@ class MoraiRLEnv:
                 ego_vehicle_width_m=config.bev.ego_vehicle_width_m,
                 ego_vehicle_offset_forward_m=config.bev.ego_vehicle_offset_forward_m,
             )
+        self._footprint_margin_offsets_key: tuple[int, int, float, float, float] | None = None
+        self._footprint_margin_offsets: list[tuple[float, int, int]] = []
         scenario_loader = None
         if config.reset.scenario_load_enabled:
             scenario_loader = RosSyncScenarioLoadClient(
@@ -754,11 +756,47 @@ class MoraiRLEnv:
         height, width = corridor_area_mask.shape
         x_resolution_m = (self.config.bev.front_range_m + self.config.bev.rear_range_m) / float(height)
         y_resolution_m = (self.config.bev.left_range_m + self.config.bev.right_range_m) / float(width)
+        outside_mask = ~corridor_area_mask
+        offsets = self._footprint_margin_offsets_for(
+            height=height,
+            width=width,
+            margin_m=margin_m,
+            x_resolution_m=x_resolution_m,
+            y_resolution_m=y_resolution_m,
+        )
+
+        for distance_m, row_offset, col_offset in offsets:
+            ego_rows, outside_rows = self._offset_slices(height, row_offset)
+            ego_cols, outside_cols = self._offset_slices(width, col_offset)
+            if np.any(
+                ego_mask[ego_rows, ego_cols]
+                & outside_mask[outside_rows, outside_cols]
+            ):
+                return float(distance_m)
+        return margin_m
+
+    def _footprint_margin_offsets_for(
+        self,
+        *,
+        height: int,
+        width: int,
+        margin_m: float,
+        x_resolution_m: float,
+        y_resolution_m: float,
+    ) -> list[tuple[float, int, int]]:
+        key = (
+            int(height),
+            int(width),
+            round(float(margin_m), 6),
+            round(float(x_resolution_m), 6),
+            round(float(y_resolution_m), 6),
+        )
+        if self._footprint_margin_offsets_key == key:
+            return self._footprint_margin_offsets
+
         min_resolution_m = max(1e-6, min(x_resolution_m, y_resolution_m))
         row_radius = int(math.ceil(margin_m / min_resolution_m))
         col_radius = row_radius
-        outside_mask = ~corridor_area_mask
-
         offsets: list[tuple[float, int, int]] = []
         for row_offset in range(-row_radius, row_radius + 1):
             for col_offset in range(-col_radius, col_radius + 1):
@@ -771,16 +809,9 @@ class MoraiRLEnv:
                 if distance_m <= margin_m:
                     offsets.append((distance_m, row_offset, col_offset))
         offsets.sort(key=lambda item: item[0])
-
-        for distance_m, row_offset, col_offset in offsets:
-            ego_rows, outside_rows = self._offset_slices(height, row_offset)
-            ego_cols, outside_cols = self._offset_slices(width, col_offset)
-            if np.any(
-                ego_mask[ego_rows, ego_cols]
-                & outside_mask[outside_rows, outside_cols]
-            ):
-                return float(distance_m)
-        return margin_m
+        self._footprint_margin_offsets_key = key
+        self._footprint_margin_offsets = offsets
+        return offsets
 
     @staticmethod
     def _offset_slices(size: int, offset: int) -> tuple[slice, slice]:

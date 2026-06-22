@@ -247,9 +247,14 @@ def _collect_rollout(
     truncateds = []
     infos = []
     episode_summaries = []
+    collect_action_stats = action_stats.log_freq > 0
 
     for _ in range(int(rollout_steps)):
-        action, value, log_prob, raw_mean, raw_std = _sample_action(model, obs)
+        action, value, log_prob, raw_mean, raw_std = _sample_action(
+            model,
+            obs,
+            collect_raw_params=collect_action_stats,
+        )
         clipped_action = np.clip(action, env.action_space.low, env.action_space.high)
         next_obs, reward, terminated, truncated, info = env.step(clipped_action)
         done = bool(terminated or truncated)
@@ -297,10 +302,14 @@ def _collect_rollout(
     )
 
 
-def _sample_action(model, obs):
+def _sample_action(model, obs, *, collect_raw_params: bool = False):
     with th.no_grad():
         obs_tensor, _ = model.policy.obs_to_tensor(obs)
-        raw_mean, raw_std = _raw_action_params(model, obs_tensor)
+        raw_mean, raw_std = (
+            _raw_action_params(model, obs_tensor)
+            if collect_raw_params
+            else (None, None)
+        )
         actions_tensor, values_tensor, log_probs_tensor = model.policy(obs_tensor)
     action = actions_tensor.detach().cpu().numpy().reshape(-1)
     value = values_tensor.detach().cpu().numpy().reshape(-1)[0]
