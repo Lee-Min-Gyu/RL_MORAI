@@ -29,6 +29,7 @@ step_hz = 50.0
 action_repeat = 1
 max_steps = 6000
 target_speed_mps = 12.0
+max_progress_speed_mps = 55.5555555556 # 200 km/h
 action_mode = "throttle_brake_steering"
 steering_only_control = false
 steering_only_fixed_throttle = 0.45

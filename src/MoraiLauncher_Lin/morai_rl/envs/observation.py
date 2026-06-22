@@ -20,7 +20,7 @@ FRONT_STEER_ANGLE_MAX_DEG = 31.151662826538086
 LONGITUDINAL_SPEED_SCALE_MPS = 50.0
 LATERAL_SPEED_SCALE_MPS = 3.0
 YAW_RATE_SCALE_RPS = 1.5
-BOUNDARY_MARGIN_SCALE_M = 1.5
+BOUNDARY_MARGIN_SCALE_M = 0.8
 
 LEGACY_VECTOR_OBSERVATION_KEYS = [
     "speed_mps",
@@ -201,10 +201,11 @@ def _normalize_vector_named(
     )
 
     track_width_m = max(0.0, float(named.get("track_width_m", 0.0)))
-    half_track_width_m = 0.5 * track_width_m
-    if half_track_width_m > 1e-6:
+    vehicle_width_m = max(0.0, float(named.get("vehicle_width_m", 0.0)))
+    usable_half_width_m = max(0.0, 0.5 * (track_width_m - vehicle_width_m))
+    if usable_half_width_m > 1e-6:
         vector_named["lateral_error_m"] = _clip_unit(
-            float(named["lateral_error_m"]) / half_track_width_m
+            float(named["lateral_error_m"]) / usable_half_width_m
         )
     else:
         vector_named["lateral_error_m"] = 0.0
@@ -327,6 +328,7 @@ def build_observation(
         "left_boundary_margin_m": left_boundary_margin_m,
         "right_boundary_margin_m": right_boundary_margin_m,
         "track_width_m": track_width_m,
+        "vehicle_width_m": vehicle_width_m,
         "heading_error_rad": projection.heading_error_rad,
         "lookahead_heading_error_5m": projection.lookahead_heading_error_5m,
         "lookahead_heading_error_10m": projection.lookahead_heading_error_10m,

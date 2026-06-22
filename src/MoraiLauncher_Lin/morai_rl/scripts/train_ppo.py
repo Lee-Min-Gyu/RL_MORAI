@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
+import json
 import math
 from pathlib import Path
 import subprocess
@@ -205,6 +207,124 @@ class EpisodeResetStatsCallback(BaseCallback if BaseCallback is not None else ob
             f"yaw={yaw:.2f}",
             flush=True,
         )
+
+
+class PenaltyCurriculumCallback(BaseCallback if BaseCallback is not None else object):
+    STAGES = [
+        {"threshold_m": None, "off_track_penalty": 800.0, "stalled_penalty": 800.0},
+        {"threshold_m": 500.0, "off_track_penalty": 1200.0, "stalled_penalty": 1200.0},
+        {"threshold_m": 900.0, "off_track_penalty": 1600.0, "stalled_penalty": 1600.0},
+        {"threshold_m": 1300.0, "off_track_penalty": 2000.0, "stalled_penalty": 2000.0},
+    ]
+
+    def __init__(
+        self,
+        env: GymMoraiEnv,
+        state_path: str | Path,
+        window_episodes: int = 39,
+        required_episodes: int = 34,
+    ) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        super().__init__()
+        self.env_ref = env
+        self.state_path = Path(state_path)
+        self.window_episodes = max(1, int(window_episodes))
+        self.required_episodes = max(1, min(int(required_episodes), self.window_episodes))
+        self.stage_index = 0
+        self.recent_progress_m: deque[float] = deque(maxlen=self.window_episodes)
+
+    def _on_training_start(self) -> None:
+        self._load_state()
+        self._apply_stage(reason="training_start")
+
+    def _on_step(self) -> bool:
+        dones = self.locals.get("dones")
+        infos = self.locals.get("infos")
+        if dones is None or infos is None:
+            return True
+        for done, info in zip(dones, infos):
+            if not done:
+                continue
+            try:
+                progress_m = float(info.get("episode_progress_m", 0.0))
+            except (TypeError, ValueError):
+                progress_m = 0.0
+            self.recent_progress_m.append(progress_m)
+            if self._maybe_advance_stage():
+                self._apply_stage(reason="threshold_met")
+            self._save_state()
+        return True
+
+    def _maybe_advance_stage(self) -> bool:
+        next_stage_index = self.stage_index + 1
+        if next_stage_index >= len(self.STAGES):
+            return False
+        if len(self.recent_progress_m) < self.window_episodes:
+            return False
+        threshold_m = self.STAGES[next_stage_index]["threshold_m"]
+        if threshold_m is None:
+            return False
+        passed = sum(1 for progress_m in self.recent_progress_m if progress_m >= float(threshold_m))
+        if passed < self.required_episodes:
+            return False
+        self.stage_index = next_stage_index
+        return True
+
+    def _apply_stage(self, reason: str) -> None:
+        stage = self.STAGES[self.stage_index]
+        env_config = self.env_ref.env.config.env
+        env_config.off_track_penalty = float(stage["off_track_penalty"])
+        env_config.stalled_penalty = float(stage["stalled_penalty"])
+        next_threshold = None
+        if self.stage_index + 1 < len(self.STAGES):
+            next_threshold = self.STAGES[self.stage_index + 1]["threshold_m"]
+        print(
+            "penalty_curriculum "
+            f"reason={reason} "
+            f"stage={self.stage_index} "
+            f"off_track_penalty={env_config.off_track_penalty:.1f} "
+            f"stalled_penalty={env_config.stalled_penalty:.1f} "
+            f"window={len(self.recent_progress_m)}/{self.window_episodes} "
+            f"required={self.required_episodes} "
+            f"next_threshold_m={next_threshold}",
+            flush=True,
+        )
+
+    def _load_state(self) -> None:
+        if not self.state_path.is_file():
+            return
+        try:
+            data = json.loads(self.state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"penalty_curriculum_state_load_failed path={self.state_path} error={exc}", flush=True)
+            return
+        try:
+            stage_index = int(data.get("stage_index", 0))
+        except (TypeError, ValueError):
+            stage_index = 0
+        self.stage_index = max(0, min(stage_index, len(self.STAGES) - 1))
+        progress_values = data.get("recent_progress_m", [])
+        if isinstance(progress_values, list):
+            self.recent_progress_m.clear()
+            for value in progress_values[-self.window_episodes :]:
+                try:
+                    self.recent_progress_m.append(float(value))
+                except (TypeError, ValueError):
+                    continue
+
+    def _save_state(self) -> None:
+        data = {
+            "stage_index": self.stage_index,
+            "window_episodes": self.window_episodes,
+            "required_episodes": self.required_episodes,
+            "recent_progress_m": list(self.recent_progress_m),
+        }
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+            self.state_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except OSError as exc:
+            print(f"penalty_curriculum_state_save_failed path={self.state_path} error={exc}", flush=True)
 
 
 class ActionStatsCallback(BaseCallback if BaseCallback is not None else object):
@@ -457,6 +577,23 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=10,
         help="Print aggregate per-scenario episode stats every N completed episodes. 0 disables.",
+    )
+    parser.add_argument(
+        "--disable-penalty-curriculum",
+        action="store_true",
+        help="Disable automatic off-track/stalled penalty curriculum updates.",
+    )
+    parser.add_argument(
+        "--penalty-curriculum-window",
+        type=int,
+        default=39,
+        help="Number of recent train episodes used for penalty curriculum stage checks.",
+    )
+    parser.add_argument(
+        "--penalty-curriculum-required",
+        type=int,
+        default=34,
+        help="Required episodes in the curriculum window that must exceed the next progress threshold.",
     )
     parser.add_argument("--sb3-verbose", type=int, default=0)
     parser.add_argument("--checkpoint-freq", type=int, default=5_000)
@@ -861,6 +998,15 @@ def main() -> None:
             scenario_stats_every=args.scenario_stats_every,
         )
         callbacks = [checkpoint_callback, episode_stats_callback]
+        if not args.disable_penalty_curriculum:
+            callbacks.append(
+                PenaltyCurriculumCallback(
+                    env=base_env,
+                    state_path=save_dir / "penalty_curriculum_state.json",
+                    window_episodes=args.penalty_curriculum_window,
+                    required_episodes=args.penalty_curriculum_required,
+                )
+            )
         if args.action_log_freq > 0:
             callbacks.append(ActionStatsCallback(log_freq=args.action_log_freq))
         if args.show_bev:

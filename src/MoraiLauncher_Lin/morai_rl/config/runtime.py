@@ -148,6 +148,7 @@ class EnvConfig:
     action_repeat: int = 1
     max_steps: int = 1000
     target_speed_mps: float = 8.0
+    max_progress_speed_mps: float = 55.5555555556
     action_mode: str = ""
     steering_only_control: bool = False
     steering_only_fixed_throttle: float = 0.0

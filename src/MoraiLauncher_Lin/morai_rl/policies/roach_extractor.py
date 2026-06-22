@@ -38,9 +38,17 @@ class RoachBeVEncoder(nn.Module):
             nn.Linear(flattened_dim, int(feature_dim)),
             nn.ReLU(),
         )
+        self.apply(self._init_weights)
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(self.cnn(observations))
+
+    @staticmethod
+    def _init_weights(module: nn.Module) -> None:
+        if isinstance(module, (nn.Conv2d, nn.Linear)):
+            nn.init.orthogonal_(module.weight, gain=nn.init.calculate_gain("relu"))
+            if module.bias is not None:
+                nn.init.constant_(module.bias, 0.0)
 
 
 class RoachCombinedExtractor(BaseFeaturesExtractor):

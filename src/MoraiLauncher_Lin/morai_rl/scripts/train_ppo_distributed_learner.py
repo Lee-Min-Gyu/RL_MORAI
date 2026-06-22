@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
 import math
 from pathlib import Path
 import socket
@@ -57,6 +59,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sb3-verbose", type=int, default=0)
     parser.add_argument("--progress-bar", action="store_true")
     parser.add_argument("--checkpoint-freq", type=int, default=6_144)
+    parser.add_argument("--disable-penalty-curriculum", action="store_true")
+    parser.add_argument("--penalty-curriculum-window", type=int, default=39)
+    parser.add_argument("--penalty-curriculum-required", type=int, default=34)
     return parser.parse_args()
 
 
@@ -66,6 +71,13 @@ def main() -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir = save_dir / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    penalty_curriculum = None
+    if not args.disable_penalty_curriculum:
+        penalty_curriculum = DistributedPenaltyCurriculum(
+            state_path=save_dir / "penalty_curriculum_state.json",
+            window_episodes=args.penalty_curriculum_window,
+            required_episodes=args.penalty_curriculum_required,
+        )
 
     model = _build_or_load_model(args, save_dir)
     _apply_policy_overrides(model, args)
@@ -88,7 +100,7 @@ def main() -> None:
         print(f"learner_listening host={args.host} port={args.port} workers={args.workers}", flush=True)
         clients = _accept_workers(server, args.workers)
         policy_version = 0
-        _broadcast_policy(clients, model, policy_version)
+        _broadcast_policy(clients, model, policy_version, penalty_curriculum)
 
         update_count = 0
         last_checkpoint_step = int(model.num_timesteps)
@@ -99,6 +111,8 @@ def main() -> None:
                 started_at = time.monotonic()
                 rollouts = _recv_rollouts(clients, expected_version=policy_version)
                 _log_rollout_stats(rollouts, policy_version)
+                if penalty_curriculum is not None:
+                    penalty_curriculum.update_from_rollouts(rollouts)
                 fill_rollout_buffer(model, rollouts)
                 model._update_current_progress_remaining(model.num_timesteps, args.timesteps)
                 model.train()
@@ -121,7 +135,7 @@ def main() -> None:
                 )
                 if model.num_timesteps >= args.timesteps:
                     break
-                _broadcast_policy(clients, model, policy_version)
+                _broadcast_policy(clients, model, policy_version, penalty_curriculum)
         except (EOFError, OSError, RuntimeError) as exc:
             interrupted_path = save_dir / "ppo_model_interrupted"
             model.save(str(interrupted_path))
@@ -140,6 +154,129 @@ def main() -> None:
         model.save(str(save_dir / "ppo_model_final"))
         _broadcast_shutdown(clients)
         print(f"learner_done saved_model={save_dir / 'ppo_model_final'}", flush=True)
+
+
+class DistributedPenaltyCurriculum:
+    STAGES = [
+        {"threshold_m": None, "off_track_penalty": 800.0, "stalled_penalty": 800.0},
+        {"threshold_m": 500.0, "off_track_penalty": 1200.0, "stalled_penalty": 1200.0},
+        {"threshold_m": 900.0, "off_track_penalty": 1600.0, "stalled_penalty": 1600.0},
+        {"threshold_m": 1300.0, "off_track_penalty": 2000.0, "stalled_penalty": 2000.0},
+    ]
+
+    def __init__(
+        self,
+        state_path: str | Path,
+        window_episodes: int = 39,
+        required_episodes: int = 34,
+    ) -> None:
+        self.state_path = Path(state_path)
+        self.window_episodes = max(1, int(window_episodes))
+        self.required_episodes = max(1, min(int(required_episodes), self.window_episodes))
+        self.stage_index = 0
+        self.recent_progress_m: deque[float] = deque(maxlen=self.window_episodes)
+        self._load_state()
+        self._print_state(reason="learner_start")
+
+    def update_from_rollouts(self, rollouts: list[dict]) -> None:
+        added = 0
+        for rollout in rollouts:
+            for summary in rollout.get("episode_summaries", []):
+                if not isinstance(summary, dict):
+                    continue
+                try:
+                    progress_m = float(summary.get("episode_progress_m", 0.0))
+                except (TypeError, ValueError):
+                    progress_m = 0.0
+                self.recent_progress_m.append(progress_m)
+                added += 1
+        if added <= 0:
+            return
+        advanced = False
+        while self._maybe_advance_stage():
+            advanced = True
+            self._print_state(reason="threshold_met")
+        if not advanced:
+            self._print_state(reason="window_update")
+        self._save_state()
+
+    def payload(self) -> dict:
+        stage = self.STAGES[self.stage_index]
+        return {
+            "stage_index": int(self.stage_index),
+            "off_track_penalty": float(stage["off_track_penalty"]),
+            "stalled_penalty": float(stage["stalled_penalty"]),
+            "window_episodes": int(self.window_episodes),
+            "required_episodes": int(self.required_episodes),
+            "recent_count": int(len(self.recent_progress_m)),
+        }
+
+    def _maybe_advance_stage(self) -> bool:
+        next_stage_index = self.stage_index + 1
+        if next_stage_index >= len(self.STAGES):
+            return False
+        if len(self.recent_progress_m) < self.window_episodes:
+            return False
+        threshold_m = self.STAGES[next_stage_index]["threshold_m"]
+        if threshold_m is None:
+            return False
+        passed = sum(1 for progress_m in self.recent_progress_m if progress_m >= float(threshold_m))
+        if passed < self.required_episodes:
+            return False
+        self.stage_index = next_stage_index
+        return True
+
+    def _print_state(self, reason: str) -> None:
+        stage = self.STAGES[self.stage_index]
+        next_threshold = None
+        if self.stage_index + 1 < len(self.STAGES):
+            next_threshold = self.STAGES[self.stage_index + 1]["threshold_m"]
+        print(
+            "distributed_penalty_curriculum "
+            f"reason={reason} "
+            f"stage={self.stage_index} "
+            f"off_track_penalty={float(stage['off_track_penalty']):.1f} "
+            f"stalled_penalty={float(stage['stalled_penalty']):.1f} "
+            f"window={len(self.recent_progress_m)}/{self.window_episodes} "
+            f"required={self.required_episodes} "
+            f"next_threshold_m={next_threshold}",
+            flush=True,
+        )
+
+    def _load_state(self) -> None:
+        if not self.state_path.is_file():
+            return
+        try:
+            data = json.loads(self.state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"distributed_penalty_curriculum_state_load_failed path={self.state_path} error={exc}", flush=True)
+            return
+        try:
+            stage_index = int(data.get("stage_index", 0))
+        except (TypeError, ValueError):
+            stage_index = 0
+        self.stage_index = max(0, min(stage_index, len(self.STAGES) - 1))
+        progress_values = data.get("recent_progress_m", [])
+        if isinstance(progress_values, list):
+            self.recent_progress_m.clear()
+            for value in progress_values[-self.window_episodes :]:
+                try:
+                    self.recent_progress_m.append(float(value))
+                except (TypeError, ValueError):
+                    continue
+
+    def _save_state(self) -> None:
+        data = {
+            "stage_index": self.stage_index,
+            "window_episodes": self.window_episodes,
+            "required_episodes": self.required_episodes,
+            "recent_progress_m": list(self.recent_progress_m),
+        }
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+            self.state_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except OSError as exc:
+            print(f"distributed_penalty_curriculum_state_save_failed path={self.state_path} error={exc}", flush=True)
 
 
 def _resolve_resume_path(resume_from: str) -> Path:
@@ -393,20 +530,27 @@ def _accept_workers(server: socket.socket, expected_workers: int) -> dict[str, s
     return clients
 
 
-def _broadcast_policy(clients: dict[str, socket.socket], model, policy_version: int) -> None:
+def _broadcast_policy(
+    clients: dict[str, socket.socket],
+    model,
+    policy_version: int,
+    penalty_curriculum: DistributedPenaltyCurriculum | None = None,
+) -> None:
     payload, checksum = dump_policy_state(model)
+    curriculum_payload = penalty_curriculum.payload() if penalty_curriculum is not None else None
     for worker_id, sock in clients.items():
-        send_message(
-            sock,
-            {
-                "type": "policy",
-                "policy_version": int(policy_version),
-                "policy_state": payload,
-                "policy_checksum": checksum,
-            },
-        )
+        message = {
+            "type": "policy",
+            "policy_version": int(policy_version),
+            "policy_state": payload,
+            "policy_checksum": checksum,
+        }
+        if curriculum_payload is not None:
+            message["penalty_curriculum"] = curriculum_payload
+        send_message(sock, message)
         print(
-            f"policy_sent worker_id={worker_id} policy_version={policy_version} checksum={checksum[:12]}",
+            f"policy_sent worker_id={worker_id} policy_version={policy_version} checksum={checksum[:12]} "
+            f"penalty_stage={curriculum_payload.get('stage_index') if curriculum_payload else '-'}",
             flush=True,
         )
 

@@ -297,7 +297,7 @@ class MoraiRLEnv:
         progress_delta = self._compute_progress_delta(projection.progress_m)
         max_reasonable_progress_delta = max(
             1.0,
-            (self.config.env.target_speed_mps / self.config.env.step_hz) * 3.0,
+            self.config.env.max_progress_speed_mps / self.config.env.step_hz,
         )
         if progress_delta < -max_reasonable_progress_delta or progress_delta > max_reasonable_progress_delta:
             progress_delta = 0.0
@@ -360,9 +360,9 @@ class MoraiRLEnv:
             alive_bonus=self.config.env.alive_bonus,
             step_penalty_value=self.config.env.step_penalty,
             steering_delta_penalty_scale=self.config.env.steering_delta_penalty_scale,
-            brake_penalty_scale=self.config.env.brake_penalty_scale,
             lateral_error_penalty_scale=self.config.env.lateral_error_penalty_scale,
-            lateral_error_penalty_clip_m=self.config.env.lateral_error_penalty_clip_m,
+            track_width_m=float(observation.named.get("track_width_m", 0.0)),
+            vehicle_width_m=float(observation.named.get("vehicle_width_m", 0.0)),
             heading_error_penalty_scale=self.config.env.heading_error_penalty_scale,
             heading_error_penalty_clip_rad=self.config.env.heading_error_penalty_clip_rad,
             boundary_proximity_penalty_scale=self.config.env.boundary_proximity_penalty_scale,

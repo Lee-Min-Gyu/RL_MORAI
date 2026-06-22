@@ -17,9 +17,9 @@ def compute_reward(
     alive_bonus: float,
     step_penalty_value: float,
     steering_delta_penalty_scale: float,
-    brake_penalty_scale: float,
     lateral_error_penalty_scale: float,
-    lateral_error_penalty_clip_m: float,
+    track_width_m: float,
+    vehicle_width_m: float,
     heading_error_penalty_scale: float,
     heading_error_penalty_clip_rad: float,
     boundary_proximity_penalty_scale: float,
@@ -34,24 +34,41 @@ def compute_reward(
     steering_delta_penalty = float(steering_delta_penalty_scale) * abs(
         action.steering - previous_action.steering
     )
-    brake_penalty = float(brake_penalty_scale) * action.brake
-    lateral_error_penalty = float(lateral_error_penalty_scale) * min(
-        abs(projection.lateral_error_m),
-        max(0.0, float(lateral_error_penalty_clip_m)),
+    usable_half_width_m = max(
+        0.0,
+        0.5 * (max(0.0, float(track_width_m)) - max(0.0, float(vehicle_width_m))),
     )
-    heading_error_penalty = float(heading_error_penalty_scale) * min(
-        abs(projection.heading_error_rad),
-        max(0.0, float(heading_error_penalty_clip_rad)),
+    if usable_half_width_m > 1e-6:
+        lateral_error_ratio = min(
+            abs(float(projection.lateral_error_m)) / usable_half_width_m,
+            1.0,
+        )
+    else:
+        lateral_error_ratio = 0.0
+    lateral_error_penalty = float(lateral_error_penalty_scale) * lateral_error_ratio
+    heading_error_clip_rad = max(1e-6, float(heading_error_penalty_clip_rad))
+    heading_error_ratio = min(
+        abs(float(projection.heading_error_rad)) / heading_error_clip_rad,
+        1.0,
     )
+    heading_error_penalty = float(heading_error_penalty_scale) * heading_error_ratio
     boundary_proximity_penalty = 0.0
     if footprint_boundary_margin_m is not None and footprint_boundary_margin_m >= 0.0:
         boundary_margin_m = max(0.0, float(footprint_boundary_margin_m))
-        proximity_m = max(0.0, float(boundary_proximity_margin_m) - boundary_margin_m)
-        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_m
+        safe_margin_m = max(1e-6, float(boundary_proximity_margin_m))
+        proximity_ratio = min(
+            max(0.0, safe_margin_m - boundary_margin_m) / safe_margin_m,
+            1.0,
+        )
+        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_ratio
     elif corridor_projection is not None and corridor_projection.inside:
         boundary_margin_m = max(0.0, -float(corridor_projection.corridor_distance_m))
-        proximity_m = max(0.0, float(boundary_proximity_margin_m) - boundary_margin_m)
-        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_m
+        safe_margin_m = max(1e-6, float(boundary_proximity_margin_m))
+        proximity_ratio = min(
+            max(0.0, safe_margin_m - boundary_margin_m) / safe_margin_m,
+            1.0,
+        )
+        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_ratio
 
     off_track_penalty = float(off_track_penalty_value) if off_track else 0.0
     stalled_penalty = float(stalled_penalty_value) if stalled else 0.0
@@ -61,7 +78,6 @@ def compute_reward(
         + alive_bonus_value
         - step_penalty
         - steering_delta_penalty
-        - brake_penalty
         - lateral_error_penalty
         - heading_error_penalty
         - boundary_proximity_penalty
@@ -73,8 +89,10 @@ def compute_reward(
         "alive_bonus": alive_bonus_value,
         "step_penalty": step_penalty,
         "steering_delta_penalty": steering_delta_penalty,
-        "brake_penalty": brake_penalty,
+        "lateral_error_usable_half_width_m": usable_half_width_m,
+        "lateral_error_ratio": lateral_error_ratio,
         "lateral_error_penalty": lateral_error_penalty,
+        "heading_error_ratio": heading_error_ratio,
         "heading_error_penalty": heading_error_penalty,
         "boundary_proximity_penalty": boundary_proximity_penalty,
         "off_track_penalty": off_track_penalty,

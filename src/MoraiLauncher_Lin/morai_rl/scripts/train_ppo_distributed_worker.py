@@ -104,6 +104,8 @@ def main() -> None:
                 raise RuntimeError(f"expected policy message, got {message.get('type')!r}")
             policy_version = int(message["policy_version"])
             load_policy_state(model, message["policy_state"])
+            penalty_curriculum = message.get("penalty_curriculum")
+            _apply_penalty_curriculum(env, penalty_curriculum, args.worker_id)
             print(
                 "policy_loaded "
                 f"worker_id={args.worker_id} policy_version={policy_version} "
@@ -144,6 +146,7 @@ def main() -> None:
                     elif args.restart_wait_sec > 0.0:
                         time.sleep(args.restart_wait_sec)
                     env = GymMoraiEnv(args.config)
+                    _apply_penalty_curriculum(env, penalty_curriculum, args.worker_id)
                     obs, _info = env.reset()
                     episode_start = True
                     episode_tracker = _new_episode_tracker()
@@ -178,6 +181,31 @@ def _connect(host: str, port: int, retry_sec: float) -> socket.socket:
         sock.settimeout(None)
         print(f"connected_to_learner host={host} port={port}", flush=True)
         return sock
+
+
+def _apply_penalty_curriculum(env: GymMoraiEnv, payload, worker_id: str) -> None:
+    if not isinstance(payload, dict):
+        return
+    try:
+        off_track_penalty = float(payload["off_track_penalty"])
+        stalled_penalty = float(payload["stalled_penalty"])
+    except (KeyError, TypeError, ValueError):
+        print(
+            f"worker_penalty_curriculum_invalid worker_id={worker_id} payload={payload}",
+            flush=True,
+        )
+        return
+    env_config = env.env.config.env
+    env_config.off_track_penalty = off_track_penalty
+    env_config.stalled_penalty = stalled_penalty
+    print(
+        "worker_penalty_curriculum_applied "
+        f"worker_id={worker_id} "
+        f"stage={payload.get('stage_index')} "
+        f"off_track_penalty={off_track_penalty:.1f} "
+        f"stalled_penalty={stalled_penalty:.1f}",
+        flush=True,
+    )
 
 
 def _send_worker_error(sock: socket.socket, worker_id: str, policy_version: int, exc: Exception) -> None:
