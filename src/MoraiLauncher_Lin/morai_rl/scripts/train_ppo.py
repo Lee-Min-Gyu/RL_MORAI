@@ -53,7 +53,7 @@ from morai_rl.policies.squashed_policy import (
     SquashedActorCriticPolicy,
     SquashedMultiInputActorCriticPolicy,
 )
-from morai_rl.policies.roach_extractor import RoachCombinedExtractor
+from morai_rl.policies.bev_extractor import BeVLightCombinedExtractor
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
 
@@ -556,7 +556,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--policy", default="auto")
-    parser.add_argument("--features-extractor", choices=["auto", "roach", "default"], default="auto")
+    parser.add_argument("--features-extractor", choices=["auto", "bev_light", "roach", "default"], default="auto")
     parser.add_argument("--action-dist", choices=["gaussian", "tanh_squashed"], default="gaussian")
     parser.add_argument("--std-init", type=float, default=0.1)
     parser.add_argument("--log-std-init", type=float, default=None)
@@ -653,8 +653,8 @@ def _resolve_policy(args: argparse.Namespace, env):
     )
 
 
-def _should_use_roach(args: argparse.Namespace, env, policy_name: str) -> bool:
-    if args.features_extractor == "roach":
+def _should_use_bev_light(args: argparse.Namespace, env, policy_name: str) -> bool:
+    if args.features_extractor in {"bev_light", "roach"}:
         return True
     if args.features_extractor == "default":
         return False
@@ -663,8 +663,8 @@ def _should_use_roach(args: argparse.Namespace, env, policy_name: str) -> bool:
 
 def _build_policy_kwargs(args: argparse.Namespace, env, policy_name: str) -> dict:
     policy_kwargs = {}
-    if _should_use_roach(args, env, policy_name):
-        policy_kwargs["features_extractor_class"] = RoachCombinedExtractor
+    if _should_use_bev_light(args, env, policy_name):
+        policy_kwargs["features_extractor_class"] = BeVLightCombinedExtractor
     log_std_init = args.log_std_init
     if log_std_init is None and args.std_init is not None and args.std_init > 0.0:
         log_std_init = math.log(float(args.std_init))
@@ -679,7 +679,7 @@ def _build_model(args: argparse.Namespace, env, save_dir: Path):
     print(f"action_dist={args.action_dist}", flush=True)
     policy_kwargs = _build_policy_kwargs(args, env, base_policy_name)
     if "features_extractor_class" in policy_kwargs:
-        print("features_extractor=roach", flush=True)
+        print("features_extractor=bev_light", flush=True)
     else:
         print("features_extractor=default", flush=True)
     if "log_std_init" in policy_kwargs:

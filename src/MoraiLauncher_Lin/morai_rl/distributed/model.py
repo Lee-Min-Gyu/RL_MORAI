@@ -206,15 +206,15 @@ def _build_policy_kwargs(
     log_std_init: float | None,
 ) -> dict[str, Any]:
     policy_kwargs: dict[str, Any] = {}
-    use_roach = features_extractor == "roach" or (
+    use_bev_light = features_extractor in {"bev_light", "roach"} or (
         features_extractor == "auto"
         and policy_name == "MultiInputPolicy"
         and isinstance(observation_space, gym.spaces.Dict)
     )
-    if use_roach:
-        from morai_rl.policies.roach_extractor import RoachCombinedExtractor
+    if use_bev_light:
+        from morai_rl.policies.bev_extractor import BeVLightCombinedExtractor
 
-        policy_kwargs["features_extractor_class"] = RoachCombinedExtractor
+        policy_kwargs["features_extractor_class"] = BeVLightCombinedExtractor
     if log_std_init is None and std_init is not None and std_init > 0.0:
         log_std_init = math.log(float(std_init))
     if log_std_init is not None:
