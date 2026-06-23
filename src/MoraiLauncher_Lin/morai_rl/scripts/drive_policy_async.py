@@ -78,6 +78,8 @@ def main() -> None:
         user_id=config.ros.user_id,
         time_step=config.ros.time_step,
         sensor_capture=False,
+        front_steer_command_scale=config.ros.front_steer_command_scale,
+        front_steer_command_sign=config.ros.front_steer_command_sign,
         node_name=config.ros.node_name,
         anonymous=config.ros.anonymous,
     )
@@ -286,6 +288,8 @@ def _try_release_sync_mode(config) -> None:
         wait_for_tick_timeout_sec=config.ros.wait_for_tick_timeout_sec,
         start_sync_on_start=False,
         stop_sync_on_close=False,
+        front_steer_command_scale=config.ros.front_steer_command_scale,
+        front_steer_command_sign=config.ros.front_steer_command_sign,
         node_name=config.ros.node_name,
         anonymous=config.ros.anonymous,
     )

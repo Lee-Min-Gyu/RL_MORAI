@@ -317,6 +317,8 @@ class RosControlClient:
         wait_for_tick_timeout_sec: float = 5.0,
         start_sync_on_start: bool = True,
         stop_sync_on_close: bool = False,
+        front_steer_command_scale: float = 1.0,
+        front_steer_command_sign: float = 1.0,
         node_name: str = "morai_rl",
         anonymous: bool = True,
     ) -> None:
@@ -334,6 +336,8 @@ class RosControlClient:
         self.wait_for_tick_timeout_sec = wait_for_tick_timeout_sec
         self.start_sync_on_start = start_sync_on_start
         self.stop_sync_on_close = stop_sync_on_close
+        self.front_steer_command_scale = float(front_steer_command_scale)
+        self.front_steer_command_sign = -1.0 if float(front_steer_command_sign) < 0.0 else 1.0
         self.node_name = node_name
         self.anonymous = anonymous
         self.frame = 0
@@ -346,7 +350,9 @@ class RosControlClient:
         self._wait_for_tick_proxy = None
         self._vehicle_receiver: RosVehicleStatusReceiver | None = None
         self._started = False
-        self._frame_step = max(1, int(round(self.time_step / 20.0)))
+        # Sync frame ids advance one command at a time. The requested simulation
+        # delta belongs in SyncModeCmd.time_step, not in the frame id stride.
+        self._frame_step = 1
         self._last_gear: int | None = None
         self._latest_sync_frame: int | None = None
         self._latest_sync_master_id = ""
@@ -621,7 +627,12 @@ class RosControlClient:
 
     def _to_ctrl_cmd(self, command: ControlCommand) -> Any:
         _, messages, _, _ = _import_ros()
-        steering = max(-1.0, min(1.0, float(command.steering)))
+        steering = (
+            float(command.steering)
+            * self.front_steer_command_sign
+            * self.front_steer_command_scale
+        )
+        steering = max(-1.0, min(1.0, steering))
         return messages["CtrlCmd"](
             longlCmdType=int(command.long_cmd_type),
             accel=float(command.throttle),

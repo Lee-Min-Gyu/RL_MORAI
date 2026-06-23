@@ -363,7 +363,7 @@ def build_observation(
     if bev_renderer is None:
         raise ValueError(f"observation mode '{mode}' requires a local BeV renderer")
 
-    bev = bev_renderer.render(state)
+    bev = bev_renderer.render(state, projection=projection)
     if mode == "bev":
         return Observation(values=bev, named=named, vector_values=vector_values, bev=bev)
     if mode == "hybrid":

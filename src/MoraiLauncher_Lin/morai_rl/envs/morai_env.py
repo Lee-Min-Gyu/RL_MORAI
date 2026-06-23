@@ -49,6 +49,8 @@ class MoraiRLEnv:
             wait_for_tick_timeout_sec=config.ros.wait_for_tick_timeout_sec,
             start_sync_on_start=config.ros.start_sync_on_start,
             stop_sync_on_close=config.ros.stop_sync_on_close,
+            front_steer_command_scale=config.ros.front_steer_command_scale,
+            front_steer_command_sign=config.ros.front_steer_command_sign,
             node_name=config.ros.node_name,
             anonymous=config.ros.anonymous,
         )

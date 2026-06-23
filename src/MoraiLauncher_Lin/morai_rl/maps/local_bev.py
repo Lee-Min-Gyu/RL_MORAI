@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from morai_rl.core.types import VehicleState
+from morai_rl.core.types import PathProjection, VehicleState
 from morai_rl.maps.reference_path import ReferencePath
 
 
@@ -77,14 +77,22 @@ class LocalBeVRenderer:
         self.drivable_channel_index = self._require_global_channel("drivable_area")
         self.lane_marking_channel_index = self._find_global_channel("lane_marking")
         self.reference_segments = self._build_reference_segments()
+        self.reference_segment_s = self._build_reference_segment_s()
 
         self.grid_x, self.grid_y = self._build_local_grid()
+        self.local_x_step_m = (self.front_range_m + self.rear_range_m) / float(self.height_px)
+        self.local_y_step_m = (self.left_range_m + self.right_range_m) / float(self.width_px)
+        self._centerline_disk_offsets_key: tuple[float, float, float, int, int] | None = None
+        self._centerline_disk_offsets: tuple[np.ndarray, np.ndarray] = (
+            np.zeros(0, dtype=np.int32),
+            np.zeros(0, dtype=np.int32),
+        )
         self.boundary_half_width_px = max(
             1,
             int(round((self.corridor_boundary_width_m * 0.5) / self.global_resolution_m_per_px)),
         )
 
-    def render(self, state: VehicleState) -> np.ndarray:
+    def render(self, state: VehicleState, projection: PathProjection | None = None) -> np.ndarray:
         world_x, world_y = self._local_grid_to_world(state)
         drivable = self._sample_global_channel(self.drivable_channel_index, world_x, world_y)
 
@@ -99,7 +107,7 @@ class LocalBeVRenderer:
                 lane_marking = self._sample_global_channel(self.lane_marking_channel_index, world_x, world_y)
             channels.append((lane_marking * 255).astype(np.uint8))
 
-        channels.append((self._render_reference_centerline(state) * 255).astype(np.uint8))
+        channels.append((self._render_reference_centerline(state, projection) * 255).astype(np.uint8))
         channels.append((self._build_ego_mask(state) * 255).astype(np.uint8))
         return np.stack(channels, axis=0)
 
@@ -185,14 +193,33 @@ class LocalBeVRenderer:
             return np.zeros((0, 4), dtype=np.float32)
         return np.asarray(segments, dtype=np.float32)
 
-    def _render_reference_centerline(self, state: VehicleState) -> np.ndarray:
+    def _build_reference_segment_s(self) -> np.ndarray:
+        segments = []
+        for index in range(len(self.reference_path.points) - 1):
+            p0 = self.reference_path.points[index]
+            p1 = self.reference_path.points[index + 1]
+            segments.append((float(p0.cumulative_s_m), float(p1.cumulative_s_m)))
+        if not segments:
+            return np.zeros((0, 2), dtype=np.float32)
+        return np.asarray(segments, dtype=np.float32)
+
+    def _render_reference_centerline(
+        self,
+        state: VehicleState,
+        projection: PathProjection | None = None,
+    ) -> np.ndarray:
         if self.reference_segments.size == 0:
             return np.zeros((self.height_px, self.width_px), dtype=np.uint8)
 
-        ax = self.reference_segments[:, 0] - state.x
-        ay = self.reference_segments[:, 1] - state.y
-        bx = self.reference_segments[:, 2] - state.x
-        by = self.reference_segments[:, 3] - state.y
+        candidate_indices = self._candidate_reference_segment_indices(projection)
+        if candidate_indices.size == 0:
+            return np.zeros((self.height_px, self.width_px), dtype=np.uint8)
+
+        segments = self.reference_segments[candidate_indices]
+        ax = segments[:, 0] - state.x
+        ay = segments[:, 1] - state.y
+        bx = segments[:, 2] - state.x
+        by = segments[:, 3] - state.y
 
         cos_yaw = math.cos(state.yaw_rad)
         sin_yaw = math.sin(state.yaw_rad)
@@ -202,25 +229,127 @@ class LocalBeVRenderer:
         local_bx = cos_yaw * bx + sin_yaw * by
         local_by = -sin_yaw * bx + cos_yaw * by
 
-        mask = np.zeros((self.height_px, self.width_px), dtype=bool)
+        mask = np.zeros((self.height_px, self.width_px), dtype=np.uint8)
         radius_m = max(0.05, 0.5 * self.centerline_width_m)
+        row_offsets, col_offsets = self._centerline_disk_offsets_for_radius(radius_m)
         for index in range(local_ax.shape[0]):
-            seg_min_x = min(local_ax[index], local_bx[index]) - radius_m
-            seg_max_x = max(local_ax[index], local_bx[index]) + radius_m
-            seg_min_y = min(local_ay[index], local_by[index]) - radius_m
-            seg_max_y = max(local_ay[index], local_by[index]) + radius_m
+            ax_i = float(local_ax[index])
+            ay_i = float(local_ay[index])
+            bx_i = float(local_bx[index])
+            by_i = float(local_by[index])
+            seg_min_x = min(ax_i, bx_i) - radius_m
+            seg_max_x = max(ax_i, bx_i) + radius_m
+            seg_min_y = min(ay_i, by_i) - radius_m
+            seg_max_y = max(ay_i, by_i) + radius_m
             if seg_max_x < -self.rear_range_m or seg_min_x > self.front_range_m:
                 continue
             if seg_max_y < -self.right_range_m or seg_min_y > self.left_range_m:
                 continue
-            distance = self._distance_to_segment(
-                ax=float(local_ax[index]),
-                ay=float(local_ay[index]),
-                bx=float(local_bx[index]),
-                by=float(local_by[index]),
-            )
-            mask |= distance <= radius_m
-        return mask.astype(np.uint8)
+            self._rasterize_local_segment(mask, ax_i, ay_i, bx_i, by_i, row_offsets, col_offsets)
+        return mask
+
+    def _candidate_reference_segment_indices(
+        self,
+        projection: PathProjection | None,
+    ) -> np.ndarray:
+        segment_count = int(self.reference_segments.shape[0])
+        if projection is None or self.reference_segment_s.size == 0:
+            return np.arange(segment_count, dtype=np.int32)
+
+        total_length_m = float(self.reference_path.total_length_m)
+        if total_length_m <= 0.0:
+            return np.arange(segment_count, dtype=np.int32)
+
+        margin_m = max(5.0, self.centerline_width_m + 2.0)
+        window_before_m = self.rear_range_m + margin_m
+        window_after_m = self.front_range_m + margin_m
+        center_s = float(projection.progress_m)
+        start_s = center_s - window_before_m
+        end_s = center_s + window_after_m
+        segment_start_s = self.reference_segment_s[:, 0]
+        segment_end_s = self.reference_segment_s[:, 1]
+
+        if self.reference_path.is_closed_loop:
+            start_s %= total_length_m
+            end_s %= total_length_m
+            if start_s <= end_s:
+                mask = (segment_end_s >= start_s) & (segment_start_s <= end_s)
+            else:
+                mask = (segment_end_s >= start_s) | (segment_start_s <= end_s)
+        else:
+            start_s = max(0.0, start_s)
+            end_s = min(total_length_m, end_s)
+            mask = (segment_end_s >= start_s) & (segment_start_s <= end_s)
+        return np.flatnonzero(mask).astype(np.int32)
+
+    def _centerline_disk_offsets_for_radius(self, radius_m: float) -> tuple[np.ndarray, np.ndarray]:
+        radius_px = max(
+            1,
+            int(math.ceil(radius_m / max(1e-6, min(self.local_x_step_m, self.local_y_step_m)))),
+        )
+        key = (
+            float(radius_m),
+            float(self.local_x_step_m),
+            float(self.local_y_step_m),
+            self.height_px,
+            self.width_px,
+        )
+        if self._centerline_disk_offsets_key == key:
+            return self._centerline_disk_offsets
+        row_offsets: list[int] = []
+        col_offsets: list[int] = []
+        for row_offset in range(-radius_px, radius_px + 1):
+            dx_m = row_offset * self.local_x_step_m
+            for col_offset in range(-radius_px, radius_px + 1):
+                dy_m = col_offset * self.local_y_step_m
+                if dx_m * dx_m + dy_m * dy_m <= radius_m * radius_m:
+                    row_offsets.append(row_offset)
+                    col_offsets.append(col_offset)
+        self._centerline_disk_offsets = (
+            np.asarray(row_offsets, dtype=np.int32),
+            np.asarray(col_offsets, dtype=np.int32),
+        )
+        self._centerline_disk_offsets_key = key
+        return self._centerline_disk_offsets
+
+    def _rasterize_local_segment(
+        self,
+        mask: np.ndarray,
+        ax: float,
+        ay: float,
+        bx: float,
+        by: float,
+        row_offsets: np.ndarray,
+        col_offsets: np.ndarray,
+    ) -> None:
+        start_row = self._local_x_to_row(ax)
+        start_col = self._local_y_to_col(ay)
+        end_row = self._local_x_to_row(bx)
+        end_col = self._local_y_to_col(by)
+        sample_count = max(1, int(math.ceil(max(abs(end_row - start_row), abs(end_col - start_col))))) + 1
+        rows = np.rint(np.linspace(start_row, end_row, sample_count)).astype(np.int32)
+        cols = np.rint(np.linspace(start_col, end_col, sample_count)).astype(np.int32)
+        in_view = (
+            (rows >= -1)
+            & (rows <= self.height_px)
+            & (cols >= -1)
+            & (cols <= self.width_px)
+        )
+        if not np.any(in_view):
+            return
+        rows = rows[in_view]
+        cols = cols[in_view]
+        rr = rows[:, None] + row_offsets[None, :]
+        cc = cols[:, None] + col_offsets[None, :]
+        valid = (rr >= 0) & (rr < self.height_px) & (cc >= 0) & (cc < self.width_px)
+        if np.any(valid):
+            mask[rr[valid], cc[valid]] = 1
+
+    def _local_x_to_row(self, local_x: float) -> float:
+        return (self.front_range_m - 0.5 * self.local_x_step_m - local_x) / self.local_x_step_m
+
+    def _local_y_to_col(self, local_y: float) -> float:
+        return (self.left_range_m - 0.5 * self.local_y_step_m - local_y) / self.local_y_step_m
 
     def _build_ego_mask(self, state: VehicleState) -> np.ndarray:
         length_m = float(state.length_m) if state.length_m and state.length_m > 0.0 else self.ego_vehicle_length_m

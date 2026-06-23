@@ -140,6 +140,8 @@ class RosConfig:
     sensor_capture: bool = False
     service_timeout_sec: float = 5.0
     wait_for_tick_timeout_sec: float = 5.0
+    front_steer_command_scale: float = 1.0
+    front_steer_command_sign: float = 1.0
 
 
 @dataclass

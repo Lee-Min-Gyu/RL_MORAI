@@ -247,6 +247,40 @@ def _print_float_line(label: str, value) -> None:
         print(f"{label}={value}", flush=True)
 
 
+class StepRateCallback(BaseCallback if BaseCallback is not None else object):
+    def __init__(self, log_every_steps: int = 1024) -> None:
+        if BaseCallback is None:  # pragma: no cover - runtime guard
+            raise ModuleNotFoundError("stable-baselines3 callbacks are unavailable")
+        super().__init__()
+        self.log_every_steps = max(1, int(log_every_steps))
+        self._last_log_time: float | None = None
+        self._last_log_timesteps = 0
+
+    def _on_training_start(self) -> None:
+        self._last_log_time = time.monotonic()
+        self._last_log_timesteps = int(self.num_timesteps)
+
+    def _on_step(self) -> bool:
+        current_timesteps = int(self.num_timesteps)
+        if current_timesteps - self._last_log_timesteps < self.log_every_steps:
+            return True
+        now = time.monotonic()
+        elapsed_sec = now - (self._last_log_time or now)
+        delta_steps = current_timesteps - self._last_log_timesteps
+        steps_per_sec = delta_steps / elapsed_sec if elapsed_sec > 1e-9 else 0.0
+        print(
+            "train_step_rate "
+            f"steps={delta_steps} "
+            f"elapsed_sec={elapsed_sec:.2f} "
+            f"step_per_sec={steps_per_sec:.2f} "
+            f"total_timesteps={current_timesteps}",
+            flush=True,
+        )
+        self._last_log_time = now
+        self._last_log_timesteps = current_timesteps
+        return True
+
+
 class PenaltyCurriculumCallback(BaseCallback if BaseCallback is not None else object):
     STAGES = [
         {"threshold_m": None, "off_track_penalty": 800.0, "stalled_penalty": 800.0},
@@ -1035,7 +1069,7 @@ def main() -> None:
             stats_dir=stats_dir,
             scenario_stats_every=args.scenario_stats_every,
         )
-        callbacks = [checkpoint_callback, episode_stats_callback]
+        callbacks = [checkpoint_callback, episode_stats_callback, StepRateCallback(log_every_steps=1024)]
         if not args.disable_penalty_curriculum:
             callbacks.append(
                 PenaltyCurriculumCallback(
