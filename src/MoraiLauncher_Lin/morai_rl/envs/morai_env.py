@@ -469,7 +469,7 @@ class MoraiRLEnv:
             return timeout_penalty
         remaining_ratio = 1.0 - (self.episode_progress_m / lap_distance_m)
         remaining_ratio = max(0.0, min(1.0, remaining_ratio))
-        return timeout_penalty * remaining_ratio
+        return timeout_penalty + timeout_penalty * remaining_ratio
 
     def _compute_lap_completed_bonus(self) -> tuple[float, float]:
         base_bonus = float(self.config.env.lap_completed_bonus)

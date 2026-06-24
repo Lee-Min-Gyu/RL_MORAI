@@ -222,6 +222,8 @@ def _print_episode_reward_breakdown(
         _print_reward_term(reward_terms, "off_track_penalty")
     elif reason == "stalled":
         _print_reward_term(reward_terms, "stalled_penalty")
+    elif reason == "max_steps":
+        _print_reward_term(reward_terms, "timeout_penalty")
     elif reason == "lap_completed":
         _print_reward_term(reward_terms, "lap_completed_bonus", label="lap_completion_reward")
 

@@ -25,7 +25,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional progress UI
 from morai_rl.distributed.model import build_distributed_ppo, dump_policy_state, load_distributed_ppo
 from morai_rl.distributed.protocol import recv_message, send_message
 from morai_rl.distributed.rollout_buffer import fill_rollout_buffer
-from morai_rl.core.episode_stats import ScenarioStatsAccumulator
+from morai_rl.core.episode_stats import EpisodeStatsWriter, ScenarioStatsAccumulator
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "stage1_ros_sync_config.toml"
 
@@ -71,6 +71,10 @@ def main() -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir = save_dir / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    stats_dir = save_dir / "stats"
+    stats_dir.mkdir(parents=True, exist_ok=True)
+    episode_writer = EpisodeStatsWriter(stats_dir, prefix="distributed_episodes")
+    print(f"distributed_episode_stats_dir={stats_dir}", flush=True)
     penalty_curriculum = None
     if not args.disable_penalty_curriculum:
         penalty_curriculum = DistributedPenaltyCurriculum(
@@ -113,7 +117,11 @@ def main() -> None:
                 before_timesteps = int(model.num_timesteps)
                 started_at = time.monotonic()
                 rollouts = _recv_rollouts(clients, expected_version=policy_version)
-                _log_rollout_stats(rollouts, policy_version)
+                _log_rollout_stats(
+                    rollouts=rollouts,
+                    policy_version=policy_version,
+                    episode_writer=episode_writer,
+                )
                 if penalty_curriculum is not None:
                     penalty_curriculum.update_from_rollouts(rollouts)
                 fill_rollout_buffer(model, rollouts)
@@ -160,6 +168,7 @@ def main() -> None:
             _broadcast_shutdown(clients)
             raise
         finally:
+            episode_writer.close()
             if progress_bar is not None:
                 progress_bar.close()
 
@@ -173,7 +182,7 @@ class DistributedPenaltyCurriculum:
         {"threshold_m": None, "off_track_penalty": 800.0, "stalled_penalty": 800.0},
         {"threshold_m": 500.0, "off_track_penalty": 1200.0, "stalled_penalty": 1200.0},
         {"threshold_m": 900.0, "off_track_penalty": 1600.0, "stalled_penalty": 1600.0},
-        {"threshold_m": 1300.0, "off_track_penalty": 2000.0, "stalled_penalty": 2000.0},
+        {"threshold_m": 1400.0, "off_track_penalty": 1800.0, "stalled_penalty": 1800.0},
     ]
 
     def __init__(
@@ -464,7 +473,11 @@ def _save_checkpoint_if_due(
     return current_step
 
 
-def _log_rollout_stats(rollouts: list[dict], policy_version: int) -> None:
+def _log_rollout_stats(
+    rollouts: list[dict],
+    policy_version: int,
+    episode_writer: EpisodeStatsWriter | None = None,
+) -> None:
     episode_summaries = [
         episode
         for rollout in rollouts
@@ -483,7 +496,13 @@ def _log_rollout_stats(rollouts: list[dict], policy_version: int) -> None:
     )
     scenario_stats = ScenarioStatsAccumulator()
     for summary in episode_summaries:
+        summary["source"] = "distributed"
+        summary["policy_version"] = int(policy_version)
+        if "episode_index" not in summary:
+            summary["episode_index"] = int(summary.get("episode_count", 0) or 0)
         scenario_stats.add(summary)
+        if episode_writer is not None:
+            episode_writer.write(summary)
     scenario_stats.print_summary(label=f"scenario_stats policy_version={policy_version}")
     for rollout in rollouts:
         summaries = [episode for episode in rollout.get("episode_summaries", []) if isinstance(episode, dict)]
