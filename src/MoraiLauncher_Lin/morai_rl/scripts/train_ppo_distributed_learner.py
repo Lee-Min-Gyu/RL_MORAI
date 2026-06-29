@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rollout-steps", type=int, default=1024)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--n-epochs", type=int, default=4)
+    parser.add_argument("--clip-range", type=float, default=0.2)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--gae-lambda", type=float, default=0.95)
     parser.add_argument("--device", default="auto")
@@ -322,6 +323,7 @@ def _build_or_load_model(args: argparse.Namespace, save_dir: Path):
             n_steps=args.rollout_steps,
             batch_size=args.batch_size,
             n_epochs=args.n_epochs,
+            clip_range=args.clip_range,
             learning_rate=args.learning_rate,
             gamma=args.gamma,
             gae_lambda=args.gae_lambda,
@@ -337,6 +339,7 @@ def _build_or_load_model(args: argparse.Namespace, save_dir: Path):
         n_steps=args.rollout_steps,
         batch_size=args.batch_size,
         n_epochs=args.n_epochs,
+        clip_range=args.clip_range,
         learning_rate=args.learning_rate,
         gamma=args.gamma,
         gae_lambda=args.gae_lambda,

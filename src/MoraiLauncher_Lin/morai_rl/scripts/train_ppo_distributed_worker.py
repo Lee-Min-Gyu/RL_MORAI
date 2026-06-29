@@ -73,6 +73,7 @@ def main() -> None:
         n_steps=args.rollout_steps,
         batch_size=min(512, args.rollout_steps),
         n_epochs=1,
+        clip_range=0.2,
         learning_rate=1e-4,
         gamma=0.99,
         gae_lambda=0.95,
