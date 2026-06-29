@@ -211,7 +211,6 @@ def _print_episode_reward_breakdown(
     print("  reward_terms", flush=True)
     for key in (
         "progress_reward",
-        "steering_delta_penalty",
         "lateral_error_penalty",
         "heading_error_penalty",
         "boundary_proximity_penalty",

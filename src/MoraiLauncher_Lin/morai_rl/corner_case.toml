@@ -37,7 +37,6 @@ steering_only_fixed_brake = 0.0
 progress_reward_scale = 6.0
 alive_bonus = 0.0
 step_penalty = 0.01
-steering_delta_penalty_scale = 0.1
 brake_penalty_scale = 0.005
 boundary_proximity_penalty_scale = 0.03
 boundary_proximity_margin_m = 0.5

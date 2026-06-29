@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from morai_rl.core.types import ControlCommand, PathProjection
+from morai_rl.core.types import PathProjection
 from morai_rl.maps.route_corridor import CorridorProjection
 
 
@@ -8,15 +8,12 @@ def compute_reward(
     progress_delta_m: float,
     projection: PathProjection,
     corridor_projection: CorridorProjection | None,
-    action: ControlCommand,
-    previous_action: ControlCommand,
     off_track: bool,
     blocked_collision: bool,
     stalled: bool,
     progress_reward_scale: float,
     alive_bonus: float,
     step_penalty_value: float,
-    steering_delta_penalty_scale: float,
     lateral_error_penalty_scale: float,
     track_width_m: float,
     vehicle_width_m: float,
@@ -31,9 +28,6 @@ def compute_reward(
     progress_reward = float(progress_reward_scale) * progress_delta_m
     alive_bonus_value = float(alive_bonus)
     step_penalty = float(step_penalty_value)
-    steering_delta_penalty = float(steering_delta_penalty_scale) * abs(
-        action.steering - previous_action.steering
-    )
     usable_half_width_m = max(
         0.0,
         0.5 * (max(0.0, float(track_width_m)) - max(0.0, float(vehicle_width_m))),
@@ -77,7 +71,6 @@ def compute_reward(
         progress_reward
         + alive_bonus_value
         - step_penalty
-        - steering_delta_penalty
         - lateral_error_penalty
         - heading_error_penalty
         - boundary_proximity_penalty
@@ -88,7 +81,6 @@ def compute_reward(
         "progress_reward": progress_reward,
         "alive_bonus": alive_bonus_value,
         "step_penalty": step_penalty,
-        "steering_delta_penalty": steering_delta_penalty,
         "lateral_error_usable_half_width_m": usable_half_width_m,
         "lateral_error_ratio": lateral_error_ratio,
         "lateral_error_penalty": lateral_error_penalty,

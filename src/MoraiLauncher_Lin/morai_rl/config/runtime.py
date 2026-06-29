@@ -158,7 +158,6 @@ class EnvConfig:
     progress_reward_scale: float = 3.0
     alive_bonus: float = 0.0
     step_penalty: float = 0.02
-    steering_delta_penalty_scale: float = 0.02
     brake_penalty_scale: float = 0.01
     boundary_proximity_penalty_scale: float = 0.2
     boundary_proximity_margin_m: float = 1.0

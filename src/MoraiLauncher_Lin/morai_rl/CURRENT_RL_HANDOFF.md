@@ -24,7 +24,6 @@ max_steps = 6000
 action_mode = "throttle_brake_steering"
 progress_reward_scale = 8.0
 step_penalty = 0.08
-steering_delta_penalty_scale = 0.1
 brake_penalty_scale = 0.02
 boundary_proximity_penalty_scale = 0.03
 boundary_proximity_margin_m = 0.3
@@ -71,7 +70,6 @@ reward =
   progress_reward
   + alive_bonus
   - step_penalty
-  - steering_delta_penalty
   - brake_penalty
   - lateral_error_penalty
   - heading_error_penalty
@@ -297,7 +295,6 @@ Do not judge by total reward alone. Watch:
 - `episode_progress_m` should trend from 800-900 m toward 1720 m.
 - `squashed_throttle_brake_mean` should not collapse below about 0.15 for long periods.
 - `raw_throttle_brake_mean` should generally stay positive and adapt by segment.
-- `steering_delta_penalty` should not explode; if steering oscillation persists, consider `steering_delta_penalty_scale = 0.15`, but be careful because too high can hurt tight corner learning.
 - If speed remains too low despite lap/timeout terms, consider adding episode speed metrics to worker logs rather than changing action means immediately.
 
 ## Important Caveats
