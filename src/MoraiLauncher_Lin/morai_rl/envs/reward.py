@@ -54,7 +54,7 @@ def compute_reward(
             max(0.0, safe_margin_m - boundary_margin_m) / safe_margin_m,
             1.0,
         )
-        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_ratio
+        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * (proximity_ratio**2)
     elif corridor_projection is not None and corridor_projection.inside:
         boundary_margin_m = max(0.0, -float(corridor_projection.corridor_distance_m))
         safe_margin_m = max(1e-6, float(boundary_proximity_margin_m))
