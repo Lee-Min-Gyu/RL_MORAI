@@ -62,7 +62,7 @@ def compute_reward(
             max(0.0, safe_margin_m - boundary_margin_m) / safe_margin_m,
             1.0,
         )
-        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * proximity_ratio
+        boundary_proximity_penalty = float(boundary_proximity_penalty_scale) * (proximity_ratio**2)
 
     off_track_penalty = float(off_track_penalty_value) if off_track else 0.0
     stalled_penalty = float(stalled_penalty_value) if stalled else 0.0
